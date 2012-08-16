@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Amver Messages Web Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="apple-mobile-web-app-capable" content="YES" />
+	<LINK rel="apple-touch-icon" href="/amver-seal.png"/>
+	<link rel="apple-touch-startup-image" href="/startup.png">
+	<META NAME="author" CONTENT="amver.com">
+
+    <!-- Le styles -->
+    <link href="../assets/css/bootstrap.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap-responsive.css" rel="stylesheet">
+	
+    <!--[if lt IE 9]>
+      <style type="text/css">
+			.btn {
+				background-image: url(../assets/img/glass-mat.png);
+				background-repeat: repeat-x;
+			} 
+			#desk-window-ie {
+				float:right; 
+				width:60%;
+			}
+			select {/*
+				*font-size:20px;*/
+			} 
+	  </style>
+    <![endif]-->
+	<!--[if lt IE 8]>
+      <style type="text/css">
+			.button-taller-ie {
+				height:27px;
+			}
+		</style>
+    <![endif]-->
+
+	<style type="text/css">
+		.section-heading-row {
+			background-color:#b0c4de; 
+			border-radius:3px;
+			border-style:solid;
+			border-width:1px;
+		}
+		.section-body {
+			border-style:solid; 
+			border-width:2px;
+			border-radius:6px;
+			padding-left:0px;
+			padding-right:0px;
+		}
+		div.app-button-group {
+			border-style:solid;
+			border-width:3px;
+			border-radius:6px;
+		}
+		div.app-btn {
+			border-style:solid; 
+			border-width:2px;
+			border-radius:6px;
+		}
+		.text-input {
+			font-size:21px; color:#666666; padding-left:10px;
+			padding-right:10px; padding-top:6px; padding-bottom:10px;
+			width:90%; border:1px solid #CCCCCC;
+			-moz-border-radius: 8px; -webkit-border-radius: 8px; border-radius: 8px;
+		}
+		.content-container{
+			margin-left:auto;margin-right:auto;background-color: #FFF;
+			font-size:17px;font-weight:bold;color:#000000;padding:10px 0px 10px 5px;
+			width:100%-5px;border-bottom: 1px solid #D9D9D9;
+		}
+		.dbar-btn {
+			height:50px;
+		}
+		.recommended-port {
+			display:none;background-color: #FFF;
+			font-size:17px;font-weight:bold;color:#000000;
+			padding:0px 0px 10px 0px;width:100%;border-bottom: 1px solid #D9D9D9;z-index:1;}
+		.port {
+			margin-top:0px;font-size:12px;font-weight:bold;color: #000;border-bottom: 
+			1px solid #D9D9D9;padding:10px 0px 10px 10px;
+			background-image:url(../assets/img/arrow.jpg);background-position:right;
+			background-repeat:no-repeat;
+		}
+	</style>
+	
+	<script type="text/javascript">
+		var report = "SP";
+		var m_report_types = new Array("sp", "pr", "dr", "fr");
+		var m_report_index = 0;
+		var m_date_field = "";
+		var m_date_pref = "";
+		var months_arr = new Array("JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC");
+		var days_arr = new Array("01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31");
+		var on_desktop = false;
+		var on_mobile = false;
+		var psfx = "";
+		var reqd_fields_all = new Array("lly-num", "vess-name", "callsign");
+		var reqd_fields_sp = new Array();
+		var reqd_fields_pr = new Array();
+		var reqd_fields_dr = new Array();
+		var reqd_fields_fr = new Array();
+		//update these with values for all mobile datebars to avoid 
+		//messing with green/white color and to populate with current date
+		//dbar_prefixes_arr stores prefixes for the bars themselves (with the buttons)
+		//dbar_arr stores the prefix for the spans that show the date
+		var dbar_prefixes_arr = new Array("dbar-current-m-", "dbar-current-", "dbar-dest-m-", "dbar-dest-", "dbar-voyage-dept-m-", "dbar-voyage-dept-", "dbar-voyage-dest-m-", "dbar-voyage-dest-", "dbar-voyage-dummy-");
+		var dbar_arr = new Array("current-m-", "current-", "dest-m-", "dest-", "voyage-dept-m-", "voyage-dept-", "voyage-dest-m-", "voyage-dest-");
+		var lat_lon_pref = new Array("current-pos-", "dept-port-", "dest-port-", "voyage-port-");
+		var last_l_line_on = false;
+		var dept_time_dirty = false;
+		var l_lines_count = 0;
+		
+		//use the section buttons to open/close the content panes
+		//expects id to be the html element id of the button being toggled
+		function toggleDisplay(id) {
+			var element = document.getElementById(id);
+			var display = element.style.display;
+			if (display == "block") {
+				element.style.display = "none";
+				document.getElementById(id+"_a_l").style.display = "none";
+				document.getElementById(id+"_a_r").style.display = "block";
+			}
+			else if (display == "none") {
+				closeAll();
+				element.style.display = "block";
+				document.getElementById(id+"_a_l").style.display = "block";
+				document.getElementById(id+"_a_r").style.display = "none";
+			}
+			
+			//if you are closing one the one that is open, display the description box
+			if (display == "block")
+				document.getElementById("desc_box").style.display = "block";
+			
+			//show the mobile version, too
+			var element_m = document.getElementById(id+"_m");
+			var display_m = element_m.style.display;
+			if (display_m == "block")
+				element_m.style.display = "none";
+			else if (display_m == "none")
+				element_m.style.display = "block";
+		}
+		
+		//close all content panes on desktop and mobile
+		function closeAll() {
+			document.getElementById("desc_box").style.display = "none";
+			var sections = new Array("vessel_info", "current_pos", "dept_port", "dest_port", "voyage_plan", "optional_info");
+			var element;
+			for (var i=0; i<sections.length; i++) {
+				element = document.getElementById(sections[i]);
+				element.style.display = "none";
+				element = document.getElementById(sections[i]+"_m");
+				element.style.display = "none";
+				document.getElementById(sections[i]+"_a_l").style.display = "none";
+				document.getElementById(sections[i]+"_a_r").style.display = "block";
+			}
+		}
+		
+		//show correct desktop nav button is active (white text on button)
+		//expects name to be either sp, pr, dr, or fr lower case
+		function activateNav(name) {
+			document.getElementById("desk-nav-sp").className = "span3";
+			document.getElementById("desk-nav-pr").className = "span3";
+			document.getElementById("desk-nav-dr").className = "span3";
+			document.getElementById("desk-nav-fr").className = "span3";
+			document.getElementById("desk-nav-"+name).className += " active";
+		}
+		
+		//desktop: close all content panes, show the desc box, show the buttons pertaining to report
+		//expects name to be either sp, pr, dr, or fr lower case
+		function navigate(name) {
+			if (report != name.toUpperCase()) {
+				var message_val = document.getElementById("message").value;
+				var change;
+				if ((message_val == "") || (change = confirm("Changing report types will cause you to lose progress on the "
+				+ "current report. Proceed?"))) {
+					if (psfx == "") //if on desktop, sync mobile nav
+						syncMNav(name);
+					activateNav(name);
+					populateOutput("");
+					closeAll();
+					document.getElementById("desc_box").style.display = "block";
+					report = name.toUpperCase();
+					showReportContent(name);
+				}
+			}
+		}
+		
+		//mobile: show correct report button and the associated buttons
+		//reports are a circular list, arrows move the list in either direction
+		//expects dir to be the integer direction of the arrow: 1 for right, -1 for left (from current)
+		function mNavigate(dir) {
+			var message_val = document.getElementById("message").value;
+			var change;
+			if ((message_val == "") || (change = confirm("Changing report types will cause you to lose progress on the "
+			+ "current report. Proceed?"))) {
+				m_report_index += dir;
+				if (m_report_index < 0)
+					m_report_index = 3;
+				else if (m_report_index > 3)
+					m_report_index = 0;
+				mChangeNav(m_report_types[m_report_index]);
+				populateOutput("");
+				navigate(m_report_types[m_report_index]);//keeps mobile in sync with desktop just in case
+				//closeAll();//called by desktop navigate function call
+				//showReportContent(m_report_types[m_report_index]);//same as above
+			}
+		}
+		
+		//show the correct mobile nav report type, hide all others
+		//expects type to be either sp, pr, dr, or fr lower case
+		function mChangeNav(type) {
+			document.getElementById("m_nav_sp").style.display = "none";
+			document.getElementById("m_nav_pr").style.display = "none";
+			document.getElementById("m_nav_dr").style.display = "none";
+			document.getElementById("m_nav_fr").style.display = "none";
+			document.getElementById("m_nav_"+type).style.display = "block";
+		}
+		
+		//adjust mobile nav to correct report when user changes report type on desktop
+		//just in case the orientation switches from mobile to desktop during use
+		function syncMNav(rep) {
+			mChangeNav(rep);
+			for (var i=0; i<m_report_types.length; i++) {
+				if (m_report_types[i] == rep)
+					m_report_index = i;
+			}
+		}
+		
+		//send text argument to the output box with id message
+		function populateOutput(text) {
+			document.getElementById("message").value = text;
+		}
+		
+		//show the buttons and fields for the given report type and hide ones that do not belong
+		//expects name to be either sp, pr, dr, or fr lower case
+		function showReportContent(name) {
+			hideContent();
+			hideButtons();
+			if (name=="sp") {
+				showSPContent();
+				showSPButtons();
+			}
+			else if (name=="fr") {
+				showFRContent();
+				showFRButtons();
+			}
+			else if (name=="pr") {
+				showPRContent();
+				showPRButtons();
+			}
+			else if (name=="dr") {
+				showDRContent();
+				showDRButtons();
+			}
+		}
+		
+		//hide the buttons that are not common to all reports
+		function hideButtons() {
+			document.getElementById("current-pos-btn").style.display = "none";
+			document.getElementById("voyage-plan-btn").style.display = "none";
+			document.getElementById("dept-port-btn").style.display = "none";
+			document.getElementById("extra-space-1").style.display = "none";
+			document.getElementById("extra-space-2").style.display = "none";
+		}
+		
+		//show buttons for sail plan
+		function showSPButtons() {
+			document.getElementById("dept-port-btn").style.display = "block";
+			document.getElementById("current-pos-btn").style.display = "block";
+			document.getElementById("voyage-plan-btn").style.display = "block";
+		}
+		
+		//show buttons for final arrival
+		function showFRButtons() {
+			document.getElementById("extra-space-1").style.display = "block";
+			document.getElementById("extra-space-2").style.display = "block";
+		}
+		
+		//show buttons for position report
+		function showPRButtons() {
+			document.getElementById("current-pos-btn").style.display = "block";
+			document.getElementById("extra-space-2").style.display = "block";
+		}
+		
+		//show buttons for deviation report
+		function showDRButtons() {
+			document.getElementById("current-pos-btn").style.display = "block";
+			document.getElementById("voyage-plan-btn").style.display = "block";
+			document.getElementById("extra-space-1").style.display = "block";
+		}
+		
+		//hide fields not common to all reports in a given section
+		//example: medical is only in sail plan > optional, but all reports have optional section
+		function hideContent() {
+			document.getElementById("current-pos-crs-spd").style.display = "none";
+			document.getElementById("current-pos-lat-long").style.display = "none";
+			document.getElementById("optional-sat").style.display = "none";
+			document.getElementById("optional-medical").style.display = "none";
+		}
+		
+		//show fields for sail plan
+		function showSPContent() {
+			document.getElementById("current-pos-crs-spd").style.display = "block";
+			document.getElementById("optional-sat").style.display = "block";
+			document.getElementById("optional-medical").style.display = "block";
+		}
+		
+		//show fields for position report
+		function showPRContent() {
+			document.getElementById("current-pos-crs-spd").style.display = "block";
+			document.getElementById("current-pos-lat-long").style.display = "block";
+			document.getElementById("optional-sat").style.display = "block";
+		}
+		
+		//show fields for deviation report
+		function showDRContent() {
+			document.getElementById("current-pos-crs-spd").style.display = "block";
+			document.getElementById("current-pos-lat-long").style.display = "block";
+			document.getElementById("optional-sat").style.display = "block";
+		}
+		
+		//show fields for final arrival
+		function showFRContent() {
+			document.getElementById("current-pos-crs-spd").style.display = "none";
+			document.getElementById("current-pos-lat-long").style.display = "none";
+		}
+		
+		//desktop: set mode to desktop, build report from desktop fields
+		function generateReport() {
+			if (!detectModeChange(0))
+				return;
+			psfx = "";
+			populateOutput(assembleLines());
+			checkRequiredFields();
+		}
+		
+		//mobile: set mode to mobile, build report from mobile fields
+		function generateReportM() {
+			if (!detectModeChange(1))
+				return;
+			psfx = "-m";
+			populateOutput(assembleLines());
+			checkRequiredFields();
+		}
+		
+		//build report string from all lines based on report type
+		function assembleLines() {
+			var msg = amverAndALines();
+			if (report=="SP") {
+				msg += bLine() + eLine() + fLine() + gLine() + iLine() + lLine() + mLine()
+					+ vLine() + xLine() + yLine();
+			}
+			else if (report=="PR") {
+				msg += bLine() + cLine() + eLine() + fLine() + iLine() + mLine() + xLine() + yLine();
+			}
+			else if (report=="DR") {
+				msg += bLine() + cLine() + eLine() + fLine() + iLine() + lLine() + mLine()
+					+ xLine() + yLine();
+			}
+			else if (report=="FR") {
+				msg += kLine() + xLine() + yLine();
+			}
+			msg += zLine();
+			return msg;
+		}
+		
+		/*FOR COMPATIBILITY WITH AN IE BUG (8 and below)
+		  ALSO CATCHES ANY UNFORSEEN BROWSERS THAT HAVE SIMILAR BUG*/
+		//Gets value from a select element. document.getElementById(name).value doesn't work in IE
+		function getSelect(e_name) {
+			var elem = document.getElementById(e_name);
+			if (elem.value == "")
+				return elem.options[elem.selectedIndex].text;
+			else
+				return elem.value;
+		}
+		
+		/*REPORT LINE GENERATING FUNCTIONS*/
+		/*NOTE: where mobile and desktop fields have same input type, the same function
+		  gets the value for the input using the global mode postfix, psfx; either empty string or -m*/
+		//AMVER REPORT TYPE and VESSEL INFO - ALL
+		function amverAndALines() {
+			var vess_name = document.getElementById("vess-name"+psfx).value;
+			var callsign = document.getElementById("callsign"+psfx).value;
+			var lly_num = document.getElementById("lly-num"+psfx).value;
+			return "AMVER/" + report + "//\nA/" + vess_name + "/" + callsign + "/" + lly_num + "//\n";
+		}
+		
+		//TIME - SP, PR, DR
+		function bLine() {
+			var pref;
+			if (psfx == "")
+				pref = "current-";
+			else
+				pref = "current-m-";
+			var month = document.getElementById(pref+"mo").innerHTML;
+			var day = document.getElementById(pref+"d").innerHTML;
+			var time = document.getElementById(pref+"t").innerHTML;
+			var hour = time.substring(0,2);
+			var min = time.substring(3,5);
+			return "B/" + day + hour + min + "Z " + month + "//\n";
+		}
+		
+		//LAT, LONG - PR, DR
+		function cLine() {
+			var pref = "current-pos";
+			var lat_deg = getSelect(pref+"-lat-deg"+psfx);
+			var lat_min = getSelect(pref+"-lat-min"+psfx);
+			var lat_dir = getSelect(pref+"-lat-dir"+psfx);
+			var lon_deg = getSelect(pref+"-lon-deg"+psfx);
+			var lon_min = getSelect(pref+"-lon-min"+psfx);
+			var lon_dir = getSelect(pref+"-lon-dir"+psfx);
+			return "C/" + lat_deg + lat_min + lat_dir + "/" + lon_deg + lon_min + lon_dir + "//\n";
+		}
+		
+		//COURSE - SP, PR, DR
+		function eLine() {
+			var pref = "current-pos";
+			var crs = document.getElementById(pref+"-crs"+psfx).value;
+			return "E/" + crs + "//\n";
+		}
+		
+		//SPEED - SP, PR, DR
+		function fLine() {
+			var pref = "current-pos";
+			var spd = document.getElementById(pref+"-spd"+psfx).value;
+			return "F/" + spd + "//\n";
+		}
+		
+		//DEPARTURE PORT INFO - SP
+		function gLine() {
+			var pref = "dept-port";
+			var p_name = document.getElementById(pref+psfx).value;
+			var lat_deg = getSelect(pref+"-lat-deg"+psfx);
+			var lat_min = getSelect(pref+"-lat-min"+psfx);
+			var lat_dir = getSelect(pref+"-lat-dir"+psfx);
+			var lon_deg = getSelect(pref+"-lon-deg"+psfx);
+			var lon_min = getSelect(pref+"-lon-min"+psfx);
+			var lon_dir = getSelect(pref+"-lon-dir"+psfx);
+			return "G/" + p_name + "/" + lat_deg + lat_min + lat_dir + "/"
+				+ lon_deg + lon_min + lon_dir + "//\n";
+		}
+		
+		//DESTINATION PORT INFO - SP, sometimes DR, recommended in FR
+		function iLine() {
+			var pref = "dest-port";
+			var p_name = document.getElementById(pref+psfx).value;
+			var lat_deg = getSelect(pref+"-lat-deg"+psfx);
+			var lat_min = getSelect(pref+"-lat-min"+psfx);
+			var lat_dir = getSelect(pref+"-lat-dir"+psfx);
+			var lon_deg = getSelect(pref+"-lon-deg"+psfx);
+			var lon_min = getSelect(pref+"-lon-min"+psfx);
+			var lon_dir = getSelect(pref+"-lon-dir"+psfx);
+			var inner = "-";
+			pref = "dest";
+			if (psfx == "-m")
+				pref = "dest-m";
+			var month = document.getElementById(pref+inner+"mo").innerHTML;
+			var day = document.getElementById(pref+inner+"d").innerHTML;
+			var time = document.getElementById(pref+inner+"t").innerHTML;
+			var hour = time.substring(0,2);
+			var min = time.substring(3,5);
+			return "I/" + p_name + "/" + lat_deg + lat_min + lat_dir + "/"
+				+ lon_deg + lon_min + lon_dir + "/" + day + hour + min + "Z " + month + "//\n";
+		}
+		
+		//ARRIVAL PORT INFO - FR
+		function kLine() {
+			var pref = "dest-port";
+			var p_name = document.getElementById(pref+psfx).value;
+			var lat_deg = getSelect(pref+"-lat-deg"+psfx);
+			var lat_min = getSelect(pref+"-lat-min"+psfx);
+			var lat_dir = getSelect(pref+"-lat-dir"+psfx);
+			var lon_deg = getSelect(pref+"-lon-deg"+psfx);
+			var lon_min = getSelect(pref+"-lon-min"+psfx);
+			var lon_dir = getSelect(pref+"-lon-dir"+psfx);
+			var inner = "-";
+			pref = "dest";
+			if (psfx == "-m")
+				pref = "dest-m";
+			var month = document.getElementById(pref+inner+"mo").innerHTML;
+			var day = document.getElementById(pref+inner+"d").innerHTML;
+			var time = document.getElementById(pref+inner+"t").innerHTML;
+			var hour = time.substring(0,2);
+			var min = time.substring(3,5);
+			return "K/" + p_name + "/" + lat_deg + lat_min + lat_dir + "/"
+				+ lon_deg + lon_min + lon_dir + "/" + day + hour + min + "Z " + month + "//\n";
+		}
+		
+		//NAVIGATION METHOD - SP, sometimes DR
+		function lLine() {
+			var pre = "voyage-";
+			return document.getElementById(pre+"preview"+psfx).value;
+		}
+		
+		//SAT# - OPTIONAL in SP, PR, DR
+		function mLine() {
+			var pref = "sat-num";
+			var s_num = document.getElementById(pref+psfx).value;
+			if (s_num != "")
+				return "M/" + s_num + "//\n";
+			else
+				return "";
+		}
+		
+		//MEDICAL - OPTIONAL in SP
+		function vLine() {
+			var pref = "medical";
+			var med = getSelect(pref+psfx);
+			if (med != "NONE")
+				return "V/" + med + "//\n";
+			else
+				return "";
+		}
+		
+		//REMARKS - OPTIONAL in ALL
+		function xLine() {
+			var pref = "remarks";
+			var rem = document.getElementById(pref+psfx).value;
+			if (rem != "")
+				return "X/" + rem + "//\n";
+			else
+				return "";
+		}
+		
+		//RELAY - OPTIONAL in ALL
+		function yLine() {
+			var pref = "relay";
+			var rel = getSelect(pref+psfx);
+			if (rel != "NONE")
+				return "Y/" + rel + "//\n";
+			else
+				return "";
+		}
+		
+		//END OF REPORT - ALL
+		function zLine() {
+			return "Z/EOR//";
+		}
+		
+		/*MOBILE DATE PICKER MANIPULATION FUNCTIONS*/
+		//set which field to manipulate
+		//pref gives the field prefix (ex. current-m- for the current time)
+		//name gives the field (ex. y for year)
+		function setField(pref,name) {
+			if ((m_date_field == name) && (m_date_pref == pref)) {//clear fields if you click same twice
+				m_date_field = "";
+				m_date_pref = "";
+			}
+			else {
+				m_date_field = name;
+				m_date_pref = pref;
+			}
+		}
+		
+		//increment currently-selected field on desktop
+		function incFieldD(pref) {
+			incField(pref);
+			updateDateD(pref);
+		}
+		
+		//decrement currently-selected field on desktop
+		function decFieldD(pref) {
+			decField(pref);
+			updateDateD(pref);
+		}
+		
+		//update date in desktop input box with strings from hidden div
+		//allows reuse of mobile datebar code
+		function updateDateD(pref) {
+			var year = document.getElementById(pref+"y").innerHTML;
+			var month = document.getElementById(pref+"mo").innerHTML;
+			var day = document.getElementById(pref+"d").innerHTML;
+			var time = document.getElementById(pref+"t").innerHTML;
+			var hour = time.substring(0,2);
+			var min = time.substring(3,5);
+			document.getElementById(pref+"date").value = year + "-" + month + "-" + day + " " + hour + ":" + min + "Z";
+		}
+		
+		//increment currently-selected field
+		function incField(pref) {
+			if ((m_date_field != "") && (pref == m_date_pref)) {
+				if (m_date_field == "y") {
+					incYear();
+					adjustDate(pref+"y", pref+"mo", pref+"d");
+				}
+				else if (m_date_field == "mo") {
+					incMonth();
+					adjustDate(pref+"y", pref+"mo", pref+"d");
+				}
+				else if (m_date_field == "d")
+					incDay();
+				else if (m_date_field == "h")
+					changeTime("hour", "inc");
+				else if (m_date_field == "m")
+					changeTime("min", "inc");
+			}
+		}
+		
+		//decrement currently-selected field
+		function decField(pref) {
+			if ((m_date_field != "") && (pref == m_date_pref)) {
+				if (m_date_field == "y") {
+					decYear();
+					adjustDate(pref+"y", pref+"mo", pref+"d");
+				}
+				else if (m_date_field == "mo") {
+					decMonth();
+					adjustDate(pref+"y", pref+"mo", pref+"d");
+				}
+				else if (m_date_field == "d")
+					decDay();
+				else if (m_date_field == "h")
+					changeTime("hour", "dec");
+				else if (m_date_field == "m")
+					changeTime("min", "dec");
+			}
+		}
+		
+		//increment the year
+		function incYear() {
+			var elem = document.getElementById(m_date_pref+"y");
+			var val = parseInt(elem.innerHTML);
+			elem.innerHTML = val + 1;
+		}
+		
+		//decrement the year
+		function decYear() {
+			var elem = document.getElementById(m_date_pref+"y");
+			var val = parseInt(elem.innerHTML);
+			elem.innerHTML = val - 1;
+		}
+		
+		//increment the month
+		function incMonth() {
+			var elem = document.getElementById(m_date_pref+"mo");
+			var val = elem.innerHTML;
+			var next = 0;
+			for (var i=0; i<12; i++) {
+				if (months_arr[i] == val) {
+					next = i + 1;
+					if (next == 12)
+						next = 0;
+				}
+			}
+			elem.innerHTML = months_arr[next];
+		}
+		
+		//decrement the month
+		function decMonth() {
+			var elem = document.getElementById(m_date_pref+"mo");
+			var val = elem.innerHTML;
+			var next = 0;
+			for (var i=0; i<12; i++) {
+				if (months_arr[i] == val) {
+					next = i - 1;
+					if (next == -1)
+						next = 11;
+				}
+			}
+			elem.innerHTML = months_arr[next];
+		}
+		
+		//increment the day
+		function incDay() {
+			var elem = document.getElementById(m_date_pref+"d");
+			var val = elem.innerHTML;
+			var mo_elem = document.getElementById(m_date_pref+"mo");
+			var mo_val = mo_elem.innerHTML;
+			var yr_elem = document.getElementById(m_date_pref+"y");
+			var yr_val = yr_elem.innerHTML;
+			var next = 0;
+			var leap_truth = false;
+			if (val.substring(0,1) == "0")
+				next = parseInt(val.substring(1));
+			else
+				next = parseInt(val);
+			if ((next == 28) && (mo_val == "FEB")) {
+				leap_truth = checkLeap(parseInt(yr_val));
+				if (!leap_truth)
+					next = 0;
+			}
+			else if ((next == 29) && (mo_val == "FEB")) {
+				next = 0;
+			}
+			else if (next == 30) {
+				if (!checkThirtyOneDays(mo_val))
+					next = 0;
+			}
+			else if (next == 31)
+				next = 0;
+			elem.innerHTML = days_arr[next];
+		}
+		
+		//check if year is a leap year
+		function checkLeap(yr) {
+			if ((yr % 400) == 0)
+				return true;
+			else if ((yr % 100) == 0)
+			   return false;
+			else if ((yr % 4) == 0)
+			   return true;
+			else
+			   return false;
+		}
+		
+		//check if the given month has 31 days
+		function checkThirtyOneDays(mo) {
+			if ((mo == "JAN") || (mo == "MAR") || (mo == "MAY") || (mo == "JUL")
+				|| (mo == "AUG") || (mo == "OCT") || (mo == "DEC"))
+				return true;
+			else
+				return false;
+		}
+		
+		//decrement the day
+		function decDay() {
+			var elem = document.getElementById(m_date_pref+"d");
+			var val = elem.innerHTML;
+			var mo_elem = document.getElementById(m_date_pref+"mo");
+			var mo_val = mo_elem.innerHTML;
+			var yr_elem = document.getElementById(m_date_pref+"y");
+			var yr_val = yr_elem.innerHTML;
+			var next = 0;
+			var leap_truth = false;
+			if (val.substring(0,1) == "0")
+				next = parseInt(val.substring(1)) - 2;
+			else
+				next = parseInt(val) - 2;
+			if (next == -1) {
+				if (mo_val == "FEB") {
+					if (checkLeap(parseInt(yr_val)))
+						next = 28;
+					else
+						next = 27;
+				}
+				else if (checkThirtyOneDays(mo_val))
+					next = 30;
+				else
+					next = 29;
+			}
+			elem.innerHTML = days_arr[next];
+		}
+		
+		//adjust day so that changing month or year doesn't create impossible date
+		function adjustDate(yr_el_name, mo_el_name, dy_el_name) {
+			var dy_elem = document.getElementById(dy_el_name);
+			var dy_val = dy_elem.innerHTML;
+			var mo_elem = document.getElementById(mo_el_name);
+			var mo_val = mo_elem.innerHTML;
+			var yr_elem = document.getElementById(yr_el_name);
+			var yr_val = yr_elem.innerHTML;
+			var curr = 0;//index into days_arr so must be one less than day
+			if (dy_val.substring(0,1) == "0")
+				curr = parseInt(dy_val.substring(1)) - 1;
+			else
+				curr = parseInt(dy_val) - 1;
+			if (mo_val == "FEB") {
+				if (curr > 27) {
+					if (checkLeap(parseInt(yr_val)))
+						curr = 28;
+					else
+						curr = 27;
+				}
+			}
+			else if (curr == 30) {
+				if (!checkThirtyOneDays(mo_val))
+					curr = 29;
+			}
+			dy_elem.innerHTML = days_arr[curr];
+		}
+		
+		//change the time based on op and str (either inc or dec and hour or min)
+		function changeTime(str, op) {
+			var elem = document.getElementById(m_date_pref+"t");
+			var val = elem.innerHTML;
+			var hour_sub = val.substring(0, 2);
+			var min_sub = val.substring(3, 5);
+			var hour_val, min_val, hour_str, min_str;
+			if (hour_sub.substring(0,1) == "0")
+				hour_val = parseInt(hour_sub.substring(1));
+			else
+				hour_val = parseInt(hour_sub);
+			if (min_sub.substring(0,1) == "0")
+				min_val = parseInt(min_sub.substring(1));
+			else
+				min_val = parseInt(min_sub);
+			if (str == "hour") {
+				if (op == "inc") {
+					hour_val++;
+					if (hour_val == 24)
+						hour_val = 0;
+				}
+				else if (op == "dec") {
+					hour_val--;
+					if (hour_val == -1)
+						hour_val = 23;
+				}
+			}
+			else if (str == "min") {
+				if (op == "inc") {
+					min_val++;
+					if (min_val == 60)
+						min_val = 0;
+				}
+				else if (op == "dec") {
+					min_val--;
+					if (min_val == -1)
+						min_val = 59;
+				}
+			}
+			if (hour_val < 10)
+				hour_str = "0" + hour_val;
+			else
+				hour_str = hour_val.toString();
+			if (min_val < 10)
+				min_str = "0" + min_val;
+			else
+				min_str = min_val.toString();
+			elem.innerHTML = hour_str + ":" + min_str + "Z";
+		}
+		
+		//activate date button with color - green for currently open, white otherwise
+		//pref gives prefix of datebar button names ex: dbar-current-m- for the current date on mobile
+		//b_name gives end of button currently open ex: y for year, not dbar-current-m-y
+		function activateDate(pref, b_name) {
+			var elem = document.getElementById(pref+b_name);
+			var color = elem.style.color;
+			if (color == "green")
+				elem.style.color = "white";
+			else {
+				var curr_pref;
+				for (var i=0; i<dbar_prefixes_arr.length; i++) {
+					curr_pref = dbar_prefixes_arr[i];
+					document.getElementById(curr_pref+"y").style.color = "white";
+					document.getElementById(curr_pref+"mo").style.color = "white";
+					document.getElementById(curr_pref+"d").style.color = "white";
+					document.getElementById(curr_pref+"h").style.color = "white";
+					document.getElementById(curr_pref+"m").style.color = "white";
+				}
+				elem.style.color = "green";
+			}
+		}
+		
+		//Expand/collapse date edit block and change text within
+		//text gives description of which section - ex. Current Date for date in current position section
+		function dateToggle(text, pref) {
+			var bar = document.getElementById(pref+"bar");
+			if (bar.style.display == "block") {
+				bar.style.display = "none";
+				document.getElementById(pref+"edit").innerHTML = text+" - tap date to edit";
+			}
+			else if (bar.style.display == "none") {
+				bar.style.display = "block";
+				document.getElementById(pref+"edit").innerHTML = text+" - tap date to close";
+			}
+		}
+		
+		//Retrieve current date/time and populate datebars
+		function getDate() {
+			var d = new Date();
+			var utc_date = d.toUTCString();
+			var u_day = utc_date.substring(5,7);
+			var u_month = utc_date.substring(8,11).toUpperCase();
+			var u_year= utc_date.substring(12,16);
+			var u_hour = utc_date.substring(17,19);
+			var u_min = utc_date.substring(20,22);
+			var hour_val, min_val;
+			if (u_hour.substring(0,1) == "0")
+				hour_val = parseInt(u_hour.substring(1));
+			else
+				hour_val = parseInt(u_hour);
+			if (u_min.substring(0,1) == "0")
+				min_val = parseInt(u_min.substring(1));
+			else
+				min_val = parseInt(u_min);
+			if (hour_val < 10)
+				u_hour= "0" + hour_val;
+			else
+				u_hour = hour_val.toString();
+			if (min_val < 10)
+				u_min = "0" + min_val;
+			else
+				u_min = min_val.toString();
+			var curr_pref;
+			for (var i=0; i<dbar_arr.length; i++) {
+				curr_pref = dbar_arr[i];
+				document.getElementById(curr_pref+"d").innerHTML = u_day;
+				document.getElementById(curr_pref+"mo").innerHTML = u_month;
+				document.getElementById(curr_pref+"y").innerHTML = u_year;
+				document.getElementById(curr_pref+"t").innerHTML = u_hour + ":" + u_min + "Z";
+				if ((i==1) || (i==3) || (i==5) || (i==7))//desktop datebars - must update the input box
+					updateDateD(curr_pref);
+			}
+		}
+		
+		//Swaps gray fill required lines button for green send report button on mobile and desktop
+		//if val is 0, display gray button. if val is 1 (or otherwise), display green button
+		function swapSend(val) {
+			if (val == 0) {
+				document.getElementById("send_btns").style.display = "none";
+				document.getElementById("fill_btns").style.display = "block";
+				document.getElementById("m_send_btn").style.display = "none";
+				document.getElementById("m_fill_btn").style.display = "block";
+			}
+			else {
+				document.getElementById("send_btns").style.display = "block";
+				document.getElementById("fill_btns").style.display = "none";
+				document.getElementById("m_send_btn").style.display = "block";
+				document.getElementById("m_fill_btn").style.display = "none";
+			}
+		}
+		
+		//0 for desktop, 1 for mobile. returns false if user on both and cancels (return to prev)
+		function detectModeChange(val) {
+			var dec = true;
+			var confirm_str = "Due to a change in window size or device orientation, you have used this "
+				+ "tool in both mobile and desktop mode. Click OK to abandon ";
+			var confirm_arr = new Array("desktop", "mobile");
+			var confirm_mid = " report changes and switch to ";
+			var confirm_end = " mode.";
+			if (val == 0)
+				on_desktop =  true;
+			else if (val == 1)
+				on_mobile = true;
+			if (on_desktop && on_mobile) {
+				var answer = confirm(confirm_str+confirm_arr[(val*-1)+1]+confirm_mid+confirm_arr[val]+confirm_end);
+				if (answer) {
+					populateOutput("");
+					if (val == 0)
+						on_mobile = false;
+					else
+						on_desktop = false;
+					dec = true;
+				}
+				else {
+					if (val == 0)
+						on_desktop = false;
+					else
+						on_mobile = false;
+					dec = false;
+				}
+			}
+			return dec;
+		}
+		
+		//check if all required fields for report type. change send button based on result
+		function checkRequiredFields() {
+			for (var i=0; i<reqd_fields_all.length; i++) {
+				if (document.getElementById(reqd_fields_all[i]+psfx).value == "") {
+					swapSend(0);
+					return;
+				}
+			}
+			swapSend(1);
+		}
+		
+		//restrict values for course fields
+		function enforceCourse(pref, post) {
+			var elem = document.getElementById(pref+"crs"+post).value;
+			//for (var i=0; i<elem.length; i++) {
+			//	if (elem.charAt(i) 
+			//}
+		}
+		
+		//restrict values for speed fields
+		function enforceSpeed(pref, post) {
+			var elem = document.getElementById(pref+"spd"+post);
+		}
+		
+		//adds options to lat and lon select inputs based on pref - the common prefix of the element ids
+		function populateLatLon(pref) {
+			var postf = new Array("", "-m");
+			var val_str = "";
+			var lat_opts, lon_opts;
+			for (var i=0; i<postf.length; i++) {
+				//set minutes
+				lat_opts = document.getElementById(pref+"lat-min"+postf[i]).options;
+				lon_opts = document.getElementById(pref+"lon-min"+postf[i]).options;
+				for (var min=0; min<60; min++) {
+					if (min < 10)
+						val_str = "0" + min;
+					else
+						val_str = min.toString();
+					lat_opts[min+1] = new Option(val_str, val_str);
+					lon_opts[min+1] = new Option(val_str, val_str);
+				}
+				//set degrees
+				val_str = "";
+				lat_opts = document.getElementById(pref+"lat-deg"+postf[i]).options;
+				lon_opts = document.getElementById(pref+"lon-deg"+postf[i]).options;
+				for (var deg=0; deg<90; deg++) {
+					if (deg < 10)
+						val_str = "0" + deg;
+					else
+						val_str = deg.toString();
+					lat_opts[deg+1] = new Option(val_str, val_str);
+					lon_opts[deg+1] = new Option("0"+val_str, "0"+val_str);
+				}
+				for (deg=90; deg<180; deg++) {
+					if (deg < 100)
+						val_str = "0" + deg;
+					else
+						val_str = deg.toString();
+					lon_opts[deg+1] = new Option(val_str, val_str);
+				}
+			}
+		}
+		
+		//iterate through all possible prefixes and populate all lat/lon options
+		function populateAllLatLon() {
+			for (var i=0; i<lat_lon_pref.length; i++)
+				populateLatLon(lat_lon_pref[i]);
+		}
+		
+		//**************************************************
+		// Get position
+		//**************************************************
+		function getCurrentPos() {
+			if(navigator.geolocation) {
+				var timeoutVal = 10 * 1000 * 1000;
+				navigator.geolocation.getCurrentPosition(foundUserLocation, noLocationFound, {enableHighAccuracy: true, timeout: timeoutVal, maximumAge: 0});
+			} 
+			else {
+				alert("Geolocation services are not supported by your browser. Plese enter current location manually.");
+			}
+		}
+			
+		function foundUserLocation(position) {
+			latitude = position.coords.latitude.toFixed(2);
+			longitude = position.coords.longitude.toFixed(2);
+			speed = position.coords.speed;
+			course = position.coords.heading;
+			
+			if(latitude !== null && longitude !== null) {
+				if(Math.abs(latitude) != latitude) {
+					// is negative
+					north_south = "S";
+				} else {
+					north_south = "N";
+				}
+				
+				latitude_array=latitude.split(".");
+				latitude_deg = Math.abs(parseInt(latitude_array[0]));
+				latitude_min = ((latitude_array[1]/100)*60/100);
+				latitude = (latitude_deg + latitude_min).toFixed(2);
+				latitude_min = latitude.split(".");
+				latitude_min = latitude_min[1];
+				var lat_elem = document.getElementById("current-pos-lat-deg");
+				lat_elem.options.selectedIndex = latitude_deg+1;
+				lat_elem = document.getElementById("current-pos-lat-deg-m");
+				lat_elem.options.selectedIndex = latitude_deg+1;
+				lat_elem = document.getElementById("current-pos-lat-min");
+				lat_elem.options.selectedIndex = parseInt(latitude_min)+1;
+				lat_elem = document.getElementById("current-pos-lat-min-m");
+				lat_elem.options.selectedIndex = parseInt(latitude_min)+1;
+				var dir_val = 0;
+				if (north_south == "S")
+					dir_val = 1;
+				lat_elem = document.getElementById("current-pos-lat-dir");
+				lat_elem.options.selectedIndex = dir_val;
+				lat_elem = document.getElementById("current-pos-lat-dir-m");
+				lat_elem.options.selectedIndex = dir_val;
+				
+				if(Math.abs(longitude) != longitude) {
+					// is negative
+					east_west = "W";
+				} else {
+					east_west = "E";
+				}
+				
+				longitude_array=longitude.split(".");
+				longitude_deg = Math.abs(parseInt(longitude_array[0]));
+				longitude_min = ((longitude_array[1]/100)*60/100);
+				longitude = (longitude_deg + longitude_min).toFixed(2);
+				longitude_min = longitude.split(".");
+				longitude_min = longitude_min[1];
+				var lon_elem = document.getElementById("current-pos-lon-deg");
+				lon_elem.options.selectedIndex = longitude_deg+1;
+				lon_elem = document.getElementById("current-pos-lon-deg-m");
+				lon_elem.options.selectedIndex = longitude_deg+1;
+				lon_elem = document.getElementById("current-pos-lon-min");
+				lon_elem.options.selectedIndex = parseInt(longitude_min)+1;
+				lon_elem = document.getElementById("current-pos-lon-min-m");
+				lon_elem.options.selectedIndex = parseInt(longitude_min)+1;
+				var dir_val = 0;
+				if (east_west == "W")
+					dir_val = 1;
+				lon_elem = document.getElementById("current-pos-lon-dir");
+				lon_elem.options.selectedIndex = dir_val;
+				lon_elem = document.getElementById("current-pos-lon-dir-m");
+				lon_elem.options.selectedIndex = dir_val;
+				
+				// if speed is obtained, convert it to knots, round it to 2 decimal points, set the form fields to this value. 
+				//If speed is null, then display the speed input fields, default 13 knots
+				if((speed !== null) && (!isNaN(speed))) {
+					speed = (speed * 1.9438444924406); // convert meters to knots
+					speed = speed.toFixed(1);
+				} else {
+					speed = 0;
+				}
+				
+				// if heading is obtained, set the form fields for course to this value. 
+				//If heading is null, then display the speed input fields, default blank
+				if((course !== null) && (!isNaN(course))) {
+					course = course.toFixed(0);
+				} else {
+					course = 0;
+				}
+				
+				//SET COURSE AND SPEED ELEMENTS
+				document.getElementById("current-pos-crs").value = course;
+				document.getElementById("current-pos-crs-m").value = course;
+				document.getElementById("current-pos-spd").value = speed;
+				document.getElementById("current-pos-spd-m").value = speed;
+				
+			} else {
+					//document.getElementById("edit-current-position").style.display = "block"; 
+			}
+		}
+		function noLocationFound() {
+			alert('Could not find current location');
+		}
+		
+		function showVoyageDeptDbar() {
+			document.getElementById('dbar-voyage-dummy-bar').style.display="none";
+			document.getElementById('dbar-voyage-dest-bar').style.display="none";
+			document.getElementById('dbar-voyage-dept-bar').style.display="block"; 
+		}
+		
+		function showVoyageDestDbar() {
+			document.getElementById('dbar-voyage-dummy-bar').style.display="none";
+			document.getElementById('dbar-voyage-dept-bar').style.display="none";
+			document.getElementById('dbar-voyage-dest-bar').style.display="block"; 
+		}
+		
+		//**************************************************
+		//**************************************************
+		// Remember the vessel info
+		//**************************************************
+		function setCookieD(lly_num_value, vess_name_value, clsn_value, exdays) {
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate() + exdays);
+			var lly_num=escape(lly_num_value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+			var vess_name=escape(vess_name_value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+			var clsn=escape(clsn_value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+			document.cookie="lly_num" + "=" + lly_num;
+			document.cookie="vess_name" + "=" + vess_name.toUpperCase();
+			document.cookie="clsn" + "=" + clsn.toUpperCase();
+		}
+		
+		function setCookieM(lly_num_value, vess_name_value, clsn_value, exdays) {
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate() + exdays);
+			var lly_num=escape(lly_num_value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+			var vess_name=escape(vess_name_value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+			var clsn=escape(clsn_value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+			document.cookie="lly_num_m" + "=" + lly_num;
+			document.cookie="vess_name_m" + "=" + vess_name.toUpperCase();
+			document.cookie="clsn_m" + "=" + clsn.toUpperCase();
+		}
+		
+		function getCookie(c_name) {
+			var i,x,y,ARRcookies=document.cookie.split(";");
+			for (i=0;i<ARRcookies.length;i++) {
+				x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+				y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+				x=x.replace(/^\s+|\s+$/g,"");
+				if (x==c_name) {
+					return unescape(y);
+				}
+			 }
+		}
+		
+		function checkCookieD() {
+			var vess_name=getCookie("vess_name");
+			var clsn=getCookie("clsn");
+			var lly_num=getCookie("lly_num");
+			if (lly_num!=null && vess_name!=null && vess_name!="") {
+				document.getElementById("lly-num").value = lly_num;
+				document.getElementById("vess-name").value = vess_name;
+				document.getElementById("callsign").value = clsn;
+				document.getElementById("rememberme").checked=true;
+			}
+		}
+		
+		function checkCookieM() {
+			var vess_name=getCookie("vess_name_m");
+			var clsn=getCookie("clsn_m");
+			var lly_num=getCookie("lly_num_m");
+			if (lly_num!=null && vess_name!=null && vess_name!="") {
+				document.getElementById("lly-num-m").value = lly_num;
+				document.getElementById("vess-name-m").value = vess_name;
+				document.getElementById("callsign-m").value = clsn;
+				document.getElementById("rememberme-m").checked=true;
+			}
+		}
+		
+		function checkCookies() {
+			checkCookieD();
+			checkCookieM();
+		}
+		
+		function rememberMeD() {
+			if(document.getElementById("rememberme").checked == true) {
+				setCookieD(document.getElementById("lly-num").value, document.getElementById("vess-name").value, document.getElementById("callsign").value, 90);
+			} 
+			else
+				setCookieD("", "", "", 90);
+		}
+		
+		function rememberMeM() {
+			if(document.getElementById("rememberme-m").checked == true) {
+				setCookieM(document.getElementById("lly-num-m").value, document.getElementById("vess-name-m").value, document.getElementById("callsign-m").value, 90);
+			} 
+			else
+				setCookieM("", "", "", 90);
+		}
+		
+		function selectReport() {
+			var mes = document.getElementById("message");
+			mes.focus();
+			mes.select();
+		}
+		
+		//**************************************************
+		//**************************************************
+		// Create and Populate offline database
+		//**************************************************
+		function initDatabase() {   
+			try {   
+				if (!window.openDatabase) {   
+					//alert('Databases are not supported in this browser.');  
+					db = null; 
+				} else {   
+					var shortName = 'amver';   
+					var version = '1.0';   
+					var displayName = 'amver ports';   
+					var maxSize = 100000; //  bytes   
+					db = openDatabase(shortName, version, displayName, maxSize);   
+					createTables();		
+				}   
+			} catch(e) {   
+				if (e == 2) {   
+					// Version number mismatch.   
+					console.log("Invalid database version.");   
+				} else {   
+					console.log("Unknown error "+e+".");   
+				}   
+				return;   
+			}   
+		}  
+		function createTables(){   
+			db.transaction(   
+				function (transaction) {   
+					transaction.executeSql("CREATE TABLE IF NOT EXISTS AMVER_PORTS(PORT_ABRV TEXT NOT NULL, PORT_NAME TEXT NOT NULL, LAT INTEGER NOT NULL, LON INTEGER NOT NULL)", [],                
+						null, 
+						function(tx, err) { displayError(err); } );        
+				}   
+			);   
+			dataExists();
+		} 
+		function dataExists() {
+				count="";
+				db.readTransaction(
+				function(tx) {            
+					tx.executeSql("SELECT COUNT(*) AS COUNT FROM AMVER_PORTS", [],                
+						function(tx, result) { 
+							for(var i = 0; i < result.rows.length; i++) {
+								count = result.rows.item(i)['COUNT'];
+								//alert("Rows in table: " + count);
+							}    prePopulate(count); }, 
+						function(tx, err) { displayError(err); } );            
+				}       
+			);
+		}
+		function prePopulate(count){   
+			if(count == "0") { 
+				//alert("go ahead, insert it");	
+				// include ports.js here
+				db.transaction(   
+					function (transaction) {   
+					
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("SNGPOR", "SINGAPORE", 1.28, 103.72)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PTGLDS", "PORT EVERGLADES", 26.08, -80.08)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("BAHAMA", "FREEPORT (BAHAMAS)", 26.5, -78.77)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("BUSAN", "BUSAN (PUSAN)", 35.1, 129.05)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("HOU PS", "HOUSTON PILOT", 29.27, -94.57)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("GALV", "GALVESTON", 29.35, -94.8)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("NRLNSW", "NEW ORLEANS/SWPASS ENTR", 28.88, -89.43)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("BALBOA", "BALBOA", 8.88, -79.53)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("CRIST", "CRISTOBAL", 9.38, -79.93)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("ROTDAM", "ROTTERDAM", 51.9, 4.02)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PTSAID", "PORT SAID", 31.28, 32.32)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("SUEZ", "SUEZ", 29.83, 32.57)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("URAGA", "URAGA", 35.25, 139.7)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PRTLND", "PORTLAND, OREGON", 46.25, -123.57)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PRTLND PS", "PORTLAND PILOT STATION", 46.25, -124.05)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PTLAND", "PORTLAND (AUSTRALIA)", -38.33, 141.62)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PORTLD", "PORTLAND, MAINE", 43.65, -70.23)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PORTLA", "PORTLAND (ENGLAND)", 50.57, -2.37)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("ESCMNS", "LES ESCOUMINS", 48.35, -69.4)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("RECAL P", "RECALADA PILOTS", -35.18, -56.25)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("BAIRES", "BUENOS AIRES", -34.58, -58.37)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("C TOWN", "CAPETOWN", -33.9, 18.4)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("DURBAN", "DURBAN", -29.85, 31.05)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("YKHAMA", "YOKOHAMA", 35.47, 139.7)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("L A", "LOS ANGELES", 33.75, -118.23)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("LBEACH", "LONG BEACH", 33.73, -118.2)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("VNCOVR", "VANCOUVER, WASHINGTON", 46.25, -123.55)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("VANCOV", "VANCOUVER (CANADA)", 49.28, -123.28)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("VANCPS", "VANCOUVER PILOT STATION", 48.17, -123.37)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PANGLS", "PORT ANGELES, WASHINGTON", 48.13, -123.42)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("AUKLND", "AUCKLAND", -36.83, 174.83)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("BRSBAN", "BRISBANE", -27.48, 153.23)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("MLBRNE", "MELBOURNE", -37.9, 144.88)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("PT HED", "PORT HEDLAND", -20.28, 118.6)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("SFRAN", "SAN FRANCISCO", 37.82, -122.42)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("GIB", "GIBRALTAR", 36.15, -5.42)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("TOKYO", "TOKYO", 35.57, 139.82)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("SAVGA", "SAVANNAH", 31.95, -80.88)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("NPTNWS", "NEWPORT NEWS", 36.98, -76.43)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("BALTO", "BALTIMORE", 39.27, -76.35)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("BALTPS", "BALTIMORE PILOT STATION", 36.85, -75.83)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("HONO", "HONOLULU", 21.32, -157.87)');
+					transaction.executeSql('INSERT INTO AMVER_PORTS (PORT_ABRV, PORT_NAME, LAT, LON) VALUES ("KOSUNG", "KAOHSIUNG", 22.55, 120.3)');
+				}, function(transaction, err) { displayError(err); }   
+				);  
+				
+
+			} 
+		}  
+		function searchPort(p_name, pref){ 
+			if(db) {
+				p_name = p_name.toUpperCase();
+				document.getElementById("recommended-"+pref+psfx).style.visibility = "visible";
+				document.getElementById("recommended-"+pref+psfx).style.display = "block"; 	
+				port_html = "";
+				db.readTransaction(
+				function(tx) {         
+					tx.executeSql("SELECT PORT_ABRV, PORT_NAME, LAT, LON FROM AMVER_PORTS WHERE REPLACE(REPLACE(PORT_NAME, '(', ''), ')', '') LIKE '%" + p_name + "%' LIMIT 0, 10", [],                
+					function(tx, result) { 
+							for(var i = 0; i < result.rows.length; i++) {
+								port_abrv = result.rows.item(i)['PORT_ABRV'];
+								port_name = result.rows.item(i)['PORT_NAME'];
+								lat = result.rows.item(i)['LAT'];
+								lon = result.rows.item(i)['LON'];
+								port_html = port_html + "<div class=\"port\" onclick=\"selectPort('" + port_name + "', '" + lat + "', '" + lon + "', '" + pref + "');\">" + port_name + "</div>";
+							}      document.getElementById("recommended-"+pref+psfx).innerHTML=port_html; }, 
+						function(tx, err) { displayError(err); } );            
+				}       
+				);
+			}
+		}
+		function displayError(err) {
+			alert("there was an error - " + err.message + " - " + err.code);
+		}
+		
+		//**************************************************
+		//**************************************************
+		// Select Port
+		//**************************************************
+		function selectPort(p_name, latitude, longitude, pref) {
+			//alert("selecting port:" + p_name + ", " + latitude + ", " + longitude );
+			document.getElementById(pref+psfx).value = p_name;
+			if(Math.abs(latitude) != latitude) {
+				// is negative
+				port_north_south = "S";
+			} 
+			else {
+				port_north_south = "N";
+			}
+			latitude_array=latitude.split(".");
+			latitude_deg = Math.abs(parseInt(latitude_array[0]));
+			latitude_min = ((latitude_array[1]/100)*60/100);
+			latitude = (latitude_deg + latitude_min).toFixed(2);
+			latitude_min = latitude.split(".");
+			latitude_min = latitude_min[1];
+			if(latitude_deg < 10) { latitude_deg = "0" + latitude_deg; }
+			document.getElementById(pref+"-lat-deg"+psfx).value = latitude_deg;
+			document.getElementById(pref+"-lat-min"+psfx).value = latitude_min;
+			document.getElementById(pref+"-lat-dir"+psfx).value = port_north_south;
+			if(Math.abs(longitude) != longitude) {
+				// is negative
+				port_east_west = "W";
+			} 
+			else {
+				port_east_west = "E";
+			}
+			longitude_array=longitude.split(".");
+			longitude_deg = Math.abs(parseInt(longitude_array[0]));
+			longitude_min = ((longitude_array[1]/100)*60/100);
+			longitude = (longitude_deg + longitude_min).toFixed(2);
+			longitude_min = longitude.split(".");
+			longitude_min = longitude_min[1];
+			if(longitude_deg < 100 && longitude_deg > 9) { longitude_deg = "0" + longitude_deg; }
+			if(longitude_deg < 10) { longitude_deg = "00" + longitude_deg; }
+			document.getElementById(pref+"-lon-deg"+psfx).value = longitude_deg;
+			document.getElementById(pref+"-lon-min"+psfx).value = longitude_min;
+			document.getElementById(pref+"-lon-dir"+psfx).value = port_east_west;
+			document.getElementById("recommended-"+pref+psfx).style.display = "none"; 
+			document.getElementById("recommended-"+pref+psfx).style.visibility = "hidden";
+			if (psfx == "-m") {
+				generateReportM();
+				window.location.href='#'+pref+psfx;
+			}
+			else
+				generateReport();
+		}
+		
+		function addLLine() {
+			if (!last_l_line_on) {
+				var pre = "voyage-";
+				var l_text = document.getElementById(pre+"preview"+psfx).value;
+				l_text = l_text
+					+ 'L/'
+					+ getSelect(pre+"nav"+psfx) + '/'
+					+ getVoyageLegSpeed()
+					+ getVoyageLegPort();
+				var coords = getVoyageLegCoords();
+				if (coords == "")
+					alert("Please enter the voyage leg coordinates before adding a line to the report.");
+				else {
+					document.getElementById(pre+"preview"+psfx).value = l_text 
+					+ coords + getVoyageLegArrival() + getVoyageLegDepart() + '/\n';
+					depart_time_dirty = false;
+					changeLLinesCount(1);
+					if (psfx == "-m")
+						generateReportM();
+					else
+						generateReport();
+				}
+			}
+			else
+				alert("You have already added the final line. Please remove it if you wish to add more full lines.");
+		}
+		
+		function addLLineM() {
+			psfx = "-m";
+			addLLine();
+			var elem = document.getElementById("message");
+			elem.rows = elem.rows+1;
+		}
+		
+		function getVoyageLegSpeed() {
+			var pre = "voyage-";
+			var val = document.getElementById(pre+"leg-spd"+psfx).value;
+			if ((val != "") && (parseInt(val) > 0))
+				return val + '/';
+			else
+				return "";
+		}
+		
+		function getVoyageLegPort() {
+			var pre = "voyage-";
+			var val = document.getElementById(pre+"port"+psfx).value;
+			if (val != "")
+				return val.toUpperCase() + '/';
+			else
+				return "";
+		}
+		
+		function getVoyageLegCoords() {
+			var pre = "voyage-";
+			var lat_deg = getSelect(pre+"port-lat-deg"+psfx);
+			var lat_min = getSelect(pre+"port-lat-min"+psfx);
+			var lat_dir = getSelect(pre+"port-lat-dir"+psfx);
+			var lon_deg = getSelect(pre+"port-lon-deg"+psfx);
+			var lon_min = getSelect(pre+"port-lon-min"+psfx);
+			var lon_dir = getSelect(pre+"port-lon-dir"+psfx);
+			if ((lat_deg=="deg")||(lat_min=="min")||(lon_deg=="deg")||(lon_min=="min"))
+				return "";
+			else
+				return lat_deg + lat_min + lat_dir + '/' + lon_deg + lon_min + lon_dir + '/';
+		}
+		
+		function getVoyageLegArrival() {
+			var pref;
+			if (psfx == "")
+				pref = "voyage-dest-";
+			else
+				pref = "voyage-dest-m-";
+			var month = document.getElementById(pref+"mo").innerHTML;
+			var day = document.getElementById(pref+"d").innerHTML;
+			var time = document.getElementById(pref+"t").innerHTML;
+			var hour = time.substring(0,2);
+			var min = time.substring(3,5);
+			return day + hour + min + "Z " + month + '/';
+		}
+		
+		function getVoyageLegDepart() {
+			if (depart_time_dirty) {
+				var pref;
+				if (psfx == "")
+					pref = "voyage-dept-";
+				else
+					pref = "voyage-dept-m-";
+				var month = document.getElementById(pref+"mo").innerHTML;
+				var day = document.getElementById(pref+"d").innerHTML;
+				var time = document.getElementById(pref+"t").innerHTML;
+				var hour = time.substring(0,2);
+				var min = time.substring(3,5);
+				return day + hour + min + "Z " + month + '/';
+			}
+			else
+				return "";
+		}
+		
+		function removeLLine() {
+			depart_time_dirty = false;
+			var pre = "voyage-";
+			var l_text, len, outputStr;
+			var output = new Array();
+			l_text = document.getElementById(pre+"preview"+psfx).value.split("\n");
+			len = l_text.length;
+			if (l_text[len-1] == "")
+				len--;
+			outputStr = "";
+			for (var i=0; i<len-1; i++) {
+				if (l_text[i] != "")
+					outputStr = outputStr + l_text[i] + '\n';
+			}
+			document.getElementById(pre+"preview"+psfx).value = outputStr;
+			changeLLinesCount(-1);
+			if (last_l_line_on)
+				last_l_line_on = false;
+			if (psfx == "-m")
+				generateReportM();
+			else
+				generateReport();
+		}
+		
+		function removeLLineM() {
+			psfx = "-m";
+			removeLLine();
+			var elem = document.getElementById("message");
+			elem.rows = elem.rows-1;
+		}
+	
+		function addLastLLine() {
+			if (!last_l_line_on) {
+				depart_time_dirty = false;
+				var pre = "voyage-";
+				var preview = document.getElementById(pre+"preview"+psfx);
+				var l_text = preview.value;
+				preview.value = l_text + "L/" + getSelect(pre+"nav"+psfx) + '//\n';
+				last_l_line_on = true;
+				changeLLinesCount(1);
+				if (psfx == "-m")
+					generateReportM();
+				else
+					generateReport();
+			}
+			else
+				alert("You have already added the final line. Remove it if you wish to add a different final line");
+		}
+		
+		function addLastLLineM(){
+			psfx = "-m";
+			addLastLLine();
+			var elem = document.getElementById("message");
+			elem.rows = elem.rows+1;
+		}
+		
+		function setDepartureDirtyTrue() {depart_time_dirty = true;}
+		
+		function changeLLinesCount(val) {
+			var elem = document.getElementById("l-lines-counter"+psfx);
+			if (val == 1) 
+				l_lines_count++;
+			else if (val == -1) {
+				l_lines_count--;
+				if (l_lines_count == -1)
+					l_lines_count = 0;
+			}
+			elem.innerHTML = l_lines_count;
+		}
+	</script>
+	
+  </head>
+
+  <body style="padding-left:0px; padding-right:0px" onLoad="initDatabase(); checkCookies(); getDate(); getCurrentPos(); populateAllLatLon();">
+
+    <div class="container-fluid" style="text-align:center; padding-left:0px; padding-right:0px" >
+	
+		<div class="row-fluid btn-info hidden-phone">
+			<h3>Amver Messages Web Tool</h3>Saving Lives at Sea Since 1958
+		</div>
+		
+		<!-- DESKTOP NAVBAR -->
+		<div class="navbar hidden-phone">
+			<div class="navbar-inner">
+				<div class="container-fluid">
+					<ul class="nav">
+						<li id="desk-nav-sp" class="span3 active"><a onClick="navigate('sp');">Sailing Plan</a></li>
+						<li id="desk-nav-pr" class="span3"><a onClick="navigate('pr');">Position Report</a></li>
+						<li id="desk-nav-dr" class="span3"><a onClick="navigate('dr');">Deviation Report</a></li>
+						<li id="desk-nav-fr" class="span3"><a onClick="navigate('fr');">Final Arrival</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		
+		<!-- MOBILE NAVBAR -->
+		<div class="btn-inverse visible-phone" style="padding:0px">
+			<div class="navbar-inner" style="padding:0px">
+			<h3>Amver Messages Web Tool</h3>Saving Lives at Sea Since 1958
+				<div class="container" style="padding:0px; height:80px">
+					<button class="btn btn-primary" style="height:50px; width:55px" onClick="mNavigate(-1);">
+						<i class="icon-arrow-left icon-white"></i>
+					</button>
+					<div class="btn btn-inverse" style="height:60px; width:150px">
+						<span>
+							<br/>
+							<h3 id="m_nav_sp" style="display:block">Sailing Plan</h3>
+							<h3 id="m_nav_pr" style="display:none">Position Report</h3>
+							<h3 id="m_nav_dr" style="display:none">Deviation Report</h3>
+							<h3 id="m_nav_fr" style="display:none">Final Arrival</h3>
+						</span>
+					</div>
+					<button class="btn btn-primary" style="height:50px; width:55px"  onClick="mNavigate(1);">
+						<i class="icon-arrow-right icon-white"></i>
+					</button>
+				</div>
+			</div>
+		</div>
+	
+		<!-- CONTENT SECTIONS - DESKTOP AND MOBILE -->
+		<div class="row-fluid app-sections-window">
+		
+			<!-- CONTENT BUTTONS AND MOBILE CONTENT PANES -->
+		    <div class="span4 app-buttons-panes" id="btns_and_content">
+			
+				<!-- VESSEL INFO BUTTON -->
+				<div class="row-fluid app-section-btn">
+					<div class="span12 btn app-btn" onClick="toggleDisplay('vessel_info');">
+						<div class="hidden-phone">
+							<div class="span11"><h4>Vessel Information</h4></div>
+							<div class="span1" style="display:block" id="vessel_info_a_r">
+								<i class="icon-plus"></i>
+							</div>
+							<div class="span1" style="display:none" id="vessel_info_a_l">
+								<i class="icon-minus"></i>
+							</div>
+						</div>
+						<div class="visible-phone">
+							<br/><h1>Vessel Information</h1><br/>
+						</div>
+					</div>
+				</div>
+				
+				<!-- VESSEL INFO MOBILE CONTENT PANE -->
+				<div id="vessel_info_m_out" class="visible-phone">
+					<div id="vessel_info_m" style="display:none;" class="section-body"><div class="content-container">
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px; width:70px">Lloyds<br/>Number</span><input type="text" placeholder="Number..." id="lly-num-m" style="height:40px; width:215px" onKeyUp="generateReportM();"/>
+						</div></div></div>
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px; width:70px">Vessel<br/>Name</span><input type="text" placeholder="Name..." id="vess-name-m" style="height:40px; width:215px" onKeyUp="generateReportM();"/>
+						</div></div></div>
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px; width:70px">Call<br/>Sign</span><input type="text" placeholder="Sign..." id="callsign-m" style="height:40px; width:215px" onKeyUp="generateReportM();"/>
+						</div></div></div>
+						<br/>
+						<LABEL for="rememberme-m" onClick="generateReportM();"><input type="checkbox" id="rememberme-m" value="Y" onChange="rememberMeM();"/><span style="font-size:17px"> Remember this vessel</span></LABEL>
+					</div></div>
+				</div><!-- END VESSEL INFO MOBILE CONTENT PANE -->
+				
+				<!-- CURRENT POSITION BUTTON -->
+				<div class="row-fluid app-section-btn" id="current-pos-btn" style="display:block">
+					<div class="span12 btn app-btn" onClick="toggleDisplay('current_pos');">
+						<div class="hidden-phone">
+							<div class="span11"><h4>Current Position</h4></div>
+							<div class="span1" style="display:block" id="current_pos_a_r">
+								<i class="icon-plus"></i>
+							</div>
+							<div class="span1" style="display:none" id="current_pos_a_l">
+								<i class="icon-minus"></i>
+							</div>
+						</div>
+						<div class="visible-phone">
+							<br/><h1>Current Position</h1><br/>
+						</div>
+					</div>
+				</div>
+				
+				<!-- CURRENT POSITION MOBILE CONTENT PANE -->
+				<div id="current_pos_m_out" class="visible-phone">
+					<div id="current_pos_m" style="display:none" class="section-body">
+						<div class="content-container">
+							<div class="control-group"><div class="controls"><div class="input-prepend">
+								<span class="add-on" style="height:40px; width:70px">Course</span><input type="text" placeholder="Course..." id="current-pos-crs-m" style="height:40px; width:215px" onKeyUp="enforceCourse('current-pos-', '-m'); generateReportM();"/>
+							</div></div></div>
+							<div class="control-group"><div class="controls"><div class="input-prepend">
+								<span class="add-on" style="height:40px; width:70px">Speed<br/>(kts)</span><input placeholder="Speed..." type="text" id="current-pos-spd-m" style="height:40px; width:215px" onKeyUp="enforceSpeed('current-pos-', '-m'); generateReportM();"/>
+							</div></div></div>
+						</div>
+						<br/>
+						<div style="margin:0px; padding:0px">
+							<h3><span id="dbar-current-m-edit" style="display:block">Current Date - tap date to edit</span></h3>
+							<div class="btn-toolbar" id="dbar-current-m-bar" style="display:none">
+								<div class="btn-group">
+									<button class="btn btn-inverse dbar-btn" id="dbar-current-m-y" onClick="activateDate('dbar-current-m-', 'y'); setField('current-m-','y');"><h4>Year</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-current-m-mo" onClick="activateDate('dbar-current-m-', 'mo'); setField('current-m-','mo');"><h4>Month</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-current-m-d" onClick="activateDate('dbar-current-m-', 'd'); setField('current-m-','d');"><h4>Day</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-current-m-h" onClick="activateDate('dbar-current-m-', 'h'); setField('current-m-','h');"><h4>Hour</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-current-m-m" onClick="activateDate('dbar-current-m-', 'm'); setField('current-m-','m');"><h4>Minute</h4></button>
+								</div>
+								<div class="btn-group">
+								<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="incField('current-m-'); generateReportM();">
+									<i class="icon-plus icon-white"></i></button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="decField('current-m-'); generateReportM();">
+										<i class="icon-minus icon-white"></i></button>
+								</div>
+							</div>
+							<div class="well" style="padding-left:0px; padding-right:0px" onClick="dateToggle('Current Date', 'dbar-current-m-');">
+								<h2><span id="current-m-y">2012</span>
+								<span>-</span>
+								<span id="current-m-mo">DEC</span>
+								<span>-</span>
+								<span id="current-m-d">12</span>
+								<span></span>
+								<span id="current-m-t">12:12Z</span></h2>
+							</div>
+						</div>
+						
+						<div id="current_pos_lat_long_m">
+							<div class="content-container">
+								Latitude:<br/>
+								<select class="input-small" style="height:50px" id="current-pos-lat-deg-m" onChange="generateReportM();">
+									<option>deg</option>
+								</select>
+								<select class="input-small" style="height:50px" id="current-pos-lat-min-m" onChange="generateReportM();">
+									<option>min</option>
+								</select>
+								<select class="input-small" style="height:50px" id="current-pos-lat-dir-m" onChange="generateReportM();">
+									<option value="N">North</option>
+									<option value="S">South</option>
+								</select>
+								Longitude:<br/>
+								<select class="input-small" style="height:50px" id="current-pos-lon-deg-m" onChange="generateReportM();">
+									<option>deg</option>
+								</select>
+								<select class="input-small" style="height:50px" id="current-pos-lon-min-m" onChange="generateReportM();">
+									<option>min</option>
+								</select>
+								<select class="input-small" style="height:50px" id="current-pos-lon-dir-m" onChange="generateReportM();">
+									<option value="E">East</option>
+									<option value="W">West</option>
+								</select>
+							</div>
+						</div>
+					</div>
+				</div><!-- END CURRENT POSITION MOBILE CONTENT PANE -->
+				
+				<!-- DEPARTURE PORT BUTTON -->
+				<div class="row-fluid app-section-btn" id="dept-port-btn" style="display:block">
+					<div class="span12 btn app-btn" onClick="toggleDisplay('dept_port');">
+						<div class="hidden-phone">
+							<div class="span11"><h4>Departure Port</h4></div>
+							<div class="span1" style="display:block" id="dept_port_a_r">
+								<i class="icon-plus"></i>
+							</div>
+							<div class="span1" style="display:none" id="dept_port_a_l">
+								<i class="icon-minus"></i>
+							</div>
+						</div>
+						<div class="visible-phone">
+							<br/><h1>Departure Port</h1><br/>
+						</div>
+					</div>
+				</div>
+				
+				<!-- DEPARTURE PORT MOBILE CONTENT PANE -->
+				<div id="dept_port_m_out" class="visible-phone">
+					<div id="dept_port_m" style="display:none" class="section-body">
+						<div class="content-container">
+							<div class="control-group"><div class="controls"><div class="input-prepend">
+								<span class="add-on" style="height:40px">Departure<br/>Port Name</span><input type="text" placeholder="Name..." style="height:40px; width:200px" id="dept-port-m" onKeyUp="generateReportM();"/>
+							</div></div></div>
+						</div>
+						<br/>
+						<div class="content-container">
+							Latitude:<br/>
+							<select class="input-small" style="height:50px" id="dept-port-lat-deg-m" onChange="generateReportM();">
+								<option>deg</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dept-port-lat-min-m" onChange="generateReportM();">
+								<option>min</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dept-port-lat-dir-m" onChange="generateReportM();">
+								<option value="N">North</option>
+								<option value="S">South</option>
+							</select>
+							Longitude:<br/>
+							<select class="input-small" style="height:50px" id="dept-port-lon-deg-m" onChange="generateReportM();">
+								<option>deg</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dept-port-lon-min-m" onChange="generateReportM();">
+								<option>min</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dept-port-lon-dir-m" onChange="generateReportM();">
+								<option value="E">East</option>
+								<option value="W">West</option>
+							</select>
+						</div>
+					</div>
+				</div><!-- END DEPARTURE PORT MOBILE CONTENT PANE -->
+				
+				<!-- DESTINATION PORT BUTTON -->
+				<div class="row-fluid app-section-btn">
+					<div class="span12 btn app-btn" onClick="toggleDisplay('dest_port');">
+						<div class="hidden-phone">
+							<div class="span11"><h4>Destination Port</h4></div>
+							<div class="span1" style="display:block" id="dest_port_a_r">
+								<i class="icon-plus"></i>
+							</div>
+							<div class="span1" style="display:none" id="dest_port_a_l">
+								<i class="icon-minus"></i>
+							</div>
+						</div>
+						<div class="visible-phone">
+							<br/><h1>Destination Port</h1><br/>
+						</div>
+					</div>
+				</div>
+				
+				<!-- DESTINATION PORT MOBILE CONTENT PANE -->
+				<div id="dest_port_m_out" class="visible-phone">
+					<div id="dest_port_m" style="display:none" class="section-body">
+						<div class="content-container">
+							<div class="control-group"><div class="controls"><div class="input-prepend">
+								<span class="add-on" style="height:40px">Destination<br/>Port Name</span><input type="text" placeholder="Name..." style="height:40px; width:200px" id="dest-port-m" onKeyUp="generateReportM();"/>
+							</div></div></div>
+						</div>
+						<br/>
+						<div id="m_t_s_dest" style="margin:0px; padding:0px">
+							<h3><span id="dbar-dest-m-edit" style="display:block">Destination ETA - tap date to edit</span></h3>
+							<div class="btn-toolbar" id="dbar-dest-m-bar" style="display:none">
+								<div class="btn-group">
+									<button class="btn btn-inverse dbar-btn" id="dbar-dest-m-y" onClick="activateDate('dbar-dest-m-', 'y'); setField('dest-m-', 'y');"><h4>Year</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-dest-m-mo" onClick="activateDate('dbar-dest-m-', 'mo'); setField('dest-m-','mo');"><h4>Month</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-dest-m-d" onClick="activateDate('dbar-dest-m-', 'd'); setField('dest-m-','d');"><h4>Day</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-dest-m-h" onClick="activateDate('dbar-dest-m-', 'h'); setField('dest-m-','h');"><h4>Hour</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-dest-m-m" onClick="activateDate('dbar-dest-m-', 'm'); setField('dest-m-','m');"><h4>Minute</h4></button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="incField('dest-m-'); generateReportM();">
+										<i class="icon-plus icon-white"></i></button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="decField('dest-m-'); generateReportM();">
+										<i class="icon-minus icon-white"></i></button>
+								</div>
+							</div>
+							<div class="well" style="padding-left:0px; padding-right:0px" onClick="dateToggle('Destination ETA', 'dbar-dest-m-');">
+								<h2><span id="dest-m-y">2012</span>
+								<span>-</span>
+								<span id="dest-m-mo">DEC</span>
+								<span>-</span>
+								<span id="dest-m-d">12</span>
+								<span></span>
+								<span id="dest-m-t">12:12Z</span></h2>
+							</div>
+						</div>
+						<div class="content-container">
+							Latitude:<br/>
+							<select class="input-small" style="height:50px" id="dest-port-lat-deg-m" onChange="generateReportM();">
+								<option>deg</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dest-port-lat-min-m" onChange="generateReportM();">
+								<option>min</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dest-port-lat-dir-m" onChange="generateReportM();">
+								<option value="N">North</option>
+								<option value="S">South</option>
+							</select>
+							Longitude:<br/>
+							<select class="input-mini" style="height:50px" id="dest-port-lon-deg-m" onChange="generateReportM();">
+								<option>deg</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dest-port-lon-min-m" onChange="generateReportM();">
+								<option>min</option>
+							</select>
+							<select class="input-small" style="height:50px" id="dest-port-lon-dir-m" onChange="generateReportM();">
+								<option value="E">East</option>
+								<option value="W">West</option>
+							</select>
+						</div>
+					</div>
+				</div><!-- END DESTINATION PORT MOBILE CONTENT PANE -->
+				
+				<!-- VOYAGE PLAN BUTTON -->
+				<div class="row-fluid app-section-btn" id="voyage-plan-btn" style="display:block">
+					<div class="span12 btn app-btn" onClick="toggleDisplay('voyage_plan');">
+						<div class="hidden-phone">
+							<div class="span11"><h4>Voyage Plan</h4></div>
+							<div class="span1" style="display:block" id="voyage_plan_a_r">
+								<i class="icon-plus"></i>
+							</div>
+							<div class="span1" style="display:none" id="voyage_plan_a_l">
+								<i class="icon-minus"></i>
+							</div>
+						</div>
+						<div class="visible-phone">
+							<br/><h1>Voyage Plan</h1><br/>
+						</div>
+					</div>
+				</div>
+				
+				<!-- VOYAGE PLAN MOBILE CONTENT PANE -->
+				<div id="voyage_plan_m_out" class="visible-phone">
+					<div id="voyage_plan_m" style="display:none" class="section-body">
+					<div class="content-container">
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px">Nav<br/>Type</span><select id="voyage-nav-m" class="input-medium" style="height:50px" onChange="generateReportM();">
+								<option>COASTAL</option>
+								<option>GC</option>
+								<option>RL</option>
+							</select>
+						</div></div></div>
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px">Leg<br/>Speed</span><input type="text" id="voyage-leg-spd-m" placeholder="Speed (If needed)..." style="height:40px; width:215px" onChange="generateReportM();"/>
+						</div></div></div>
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px">Port<br/>Name</span><input type="text" placeholder="Port/Landmark (Optional)..." style="height:40px; width:215px" id="voyage-port-m" onKeyUp="generateReportM();"/>
+						</div></div></div>
+					</div>
+					
+					<div id="m_t_s_voyage_dest" style="margin:0px; padding:0px">
+							<h3><span id="dbar-voyage-dest-m-edit" style="display:block">Destination ETA - tap date to edit</span></h3>
+							<div class="btn-toolbar" id="dbar-voyage-dest-m-bar" style="display:none">
+								<div class="btn-group">
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dest-m-y" onClick="activateDate('dbar-voyage-dest-m-', 'y'); setField('voyage-dest-m-', 'y');"><h4>Year</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dest-m-mo" onClick="activateDate('dbar-voyage-dest-m-', 'mo'); setField('voyage-dest-m-', 'mo');"><h4>Month</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dest-m-d" onClick="activateDate('dbar-voyage-dest-m-', 'd'); setField('voyage-dest-m-', 'd');"><h4>Day</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dest-m-h" onClick="activateDate('dbar-voyage-dest-m-', 'h'); setField('voyage-dest-m-', 'h');"><h4>Hour</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dest-m-m" onClick="activateDate('dbar-voyage-dest-m-', 'm'); setField('voyage-dest-m-', 'm');"><h4>Minute</h4></button>
+								</div>
+								<div class="btn-group">
+								<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="incField('voyage-dest-m-'); generateReportM();">
+									<i class="icon-plus icon-white"></i>
+								</button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="decField('voyage-dest-m-'); generateReportM();">
+										<i class="icon-minus icon-white"></i>
+									</button>
+								</div>
+							</div>
+							<div class="well" style="padding-left:0px; padding-right:0px" onClick="dateToggle('Destination ETA', 'dbar-voyage-dest-m-', '');">
+								<h2><span id="voyage-dest-m-y">2012</span>
+								<span>-</span>
+								<span id="voyage-dest-m-mo">AUG</span>
+								<span>-</span>
+								<span id="voyage-dest-m-d">08</span>
+								<span></span>
+								<span id="voyage-dest-m-t">17:07Z</span></h2>
+							</div>
+						</div>
+					
+						<div id="m_t_s_voyage_dept" style="margin:0px; padding:0px">
+							<h3><span id="dbar-voyage-dept-m-edit" style="display:block">Departure Time - tap date to edit</span></h3>
+							<div class="btn-toolbar" id="dbar-voyage-dept-m-bar" style="display:none">
+								<div class="btn-group">
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dept-m-y" onClick="activateDate('dbar-voyage-dept-m-', 'y'); setField('voyage-dept-m-', 'y');"><h4>Year</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dept-m-mo" onClick="activateDate('dbar-voyage-dept-m-', 'mo'); setField('voyage-dept-m-', 'mo');"><h4>Month</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dept-m-d" onClick="activateDate('dbar-voyage-dept-m-', 'd'); setField('voyage-dept-m-', 'd');"><h4>Day</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dept-m-h" onClick="activateDate('dbar-voyage-dept-m-', 'h'); setField('voyage-dept-m-', 'h');"><h4>Hour</h4></button>
+									<button class="btn btn-inverse dbar-btn" id="dbar-voyage-dept-m-m" onClick="activateDate('dbar-voyage-dept-m-', 'm'); setField('voyage-dept-m-', 'm');"><h4>Minute</h4></button>
+								</div>
+								<div class="btn-group">
+								<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="incField('voyage-dept-m-'); generateReportM();">
+									<i class="icon-plus icon-white"></i>
+								</button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" style="height:50px; width:100px" onClick="decField('voyage-dept-m-'); generateReportM();">
+										<i class="icon-minus icon-white"></i>
+									</button>
+								</div>
+							</div>
+							<div class="well" style="padding-left:0px; padding-right:0px" onClick="dateToggle('Departure Time', 'dbar-voyage-dept-m-'); setDepartureDirtyTrue();">
+								<h2><span id="voyage-dept-m-y">2012</span>
+								<span>-</span>
+								<span id="voyage-dept-m-mo">DEC</span>
+								<span>-</span>
+								<span id="voyage-dept-m-d">12</span>
+								<span></span>
+								<span id="voyage-dept-m-t">12:12Z</span></h2>
+							</div>
+						</div>
+						
+						<div class="content-container">
+							Latitude:<br/>
+							<select id="voyage-port-lat-deg-m" class="input-small" style="height:50px" onChange="generateReportM();">
+								<option>deg</option>
+							</select>
+							<select id="voyage-port-lat-min-m" class="input-small" style="height:50px" onChange="generateReportM();">
+								<option>min</option>
+							</select>
+							<select id="voyage-port-lat-dir-m" class="input-small" style="height:50px" onChange="generateReportM();">
+								<option value="N">North</option>
+								<option value="S">South</option>
+							</select>
+							Longitude:<br/>
+							<select id="voyage-port-lon-deg-m" class="input-small" style="height:50px" onChange="generateReportM();">
+								<option>deg</option>
+							</select>
+							<select id="voyage-port-lon-min-m" class="input-small" style="height:50px" onChange="generateReportM();">
+								<option>min</option>
+							</select>
+							<select id="voyage-port-lon-dir-m" class="input-small" style="height:50px" onChange="generateReportM();">
+								<option value="E">East</option>
+								<option value="W">West</option>
+							</select>
+						</div>
+						<div>
+							<h2>L Lines Count: <span id="l-lines-counter-m">0</span></h2>
+							<div class="btn-toolbar"><div class="btn-group">
+								<button class="btn btn-success" style="width:95px; height:70px; font-size: 20px" onClick="addLLineM();">Add Full Line</button>
+								<button class="btn btn-success" style="width:95px; height:70px; font-size: 20px" onClick="addLastLLineM();">Add Final Line</button>
+								<button class="btn btn-danger" style="width:120px; height:70px; font-size: 20px" onClick="removeLLineM();">Remove Previous</button>
+							</div></div>
+							<br/>
+							<textarea id="voyage-preview-m" readonly rows="7" style="width:95%; display:none"></textarea>
+						</div>
+					</div>
+				</div><!-- END VOYAGE PLAN MOBILE CONTENT PANE -->
+				
+				<!-- OPTIONAL INFO BUTTON -->
+				<div class="row-fluid app-section-btn">
+					<div class="span12 btn app-btn" onClick="toggleDisplay('optional_info');">
+						<div class="hidden-phone">
+							<div class="span11"><h4>Optional Information</h4></div>
+							<div class="span1" style="display:block" id="optional_info_a_r">
+								<i class="icon-plus"></i>
+							</div>
+							<div class="span1" style="display:none" id="optional_info_a_l">
+								<i class="icon-minus"></i>
+							</div>
+						</div>
+						<div class="visible-phone">
+							<br/><h1>Optional Information</h1><br/>
+						</div>
+					</div>
+				</div>
+				
+				<!-- OPTIONAL INFO MOBILE CONTENT PANE -->
+				<div id="optional_info_m_out" class="visible-phone">
+					<div id="optional_info_m" style="display:none" class="section-body"><div class="content-container">
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px">Remarks</span><input type="text" id="remarks-m" placeholder="Remarks..." style="height:40px; width:215px" onKeyUp="generateReportM();"/>
+						</div></div></div>
+						
+						<div id="optional-sat-m" style="display:block">
+							<div class="control-group"><div class="controls"><div class="input-prepend">
+								<span class="add-on" style="height:40px; width:70px">Sat<br/>Number</span><input type="text" id="sat-num-m" placeholder="Number..." style="height:40px; width:215px" onKeyUp="generateReportM();"/>
+							</div></div></div>
+						</div>
+						
+						<div class="control-group"><div class="controls"><div class="input-prepend">
+							<span class="add-on" style="height:40px">Relay</span><select class="input-medium" style="height:50px" id="relay-m" onChange="generateReportM();">
+								<option value="">NONE</option>
+								<option value="JASREP">JASREP</option>
+								<option value="CHILREP">CHILREP</option>
+							</select>
+						</div></div></div>
+					
+						<div id="optional-medical-m" style="display:block">
+							<div class="control-group"><div class="controls"><div class="input-prepend">
+								<span class="add-on" style="height:40px">Medical</span><select class="input-medium" style="height:50px" id="medical-m" onChange="generateReportM();">
+									<option value="">NONE</option>
+									<option value="DOCTOR">DOCTOR</option>
+									<option value="NURSE">NURSE</option>
+									<option value="PARAMEDIC">PARAMEDIC</option>
+								</select>
+							</div></div></div>
+						</div>
+					</div></div>
+				</div><!-- END OPTIONAL INFO MOBILE CONTENT PANE -->
+				
+				<div class="row-fluid hidden-phone" id="extra-space-1" style="display:none; height:40px">
+					<div class="span12">
+						<div class="hidden-phone">
+							<span style="color:white">.</span>
+						</div>
+					</div>
+				</div>
+				
+				<div class="row-fluid hidden-phone" id="extra-space-2" style="display:none; height:80px">
+					<div class="span12">
+						<div class="hidden-phone">
+							<span style="color:white">.</span>
+						</div>
+					</div>
+				</div>
+				
+			</div><!-- END CONTENT BUTTONS AND MOBILE CONTENT PANES -->
+			
+			<!-- ============ DESKTOP CONTENT WINDOW ==================== -->
+			<div class="span8 hidden-phone" id="desk-window-ie">
+				<div class="row hero-unit-row"> <!--DESCRIPTION BOX HERO UNIT -->
+					<div class="hero-unit" id="desc_box" style="display:block; height:108px">
+						<br/>
+						<h2>To Generate Amver Messages:</h2>
+						<span>
+						Select the report type from the navigation bar above.
+						Then, click a section button
+						on the left to show its fields in this pane.
+						<br/>The generated report appears in the box below.
+						</span>
+						<br/><br/>
+					</div>
+				</div><!--END DESCRIPTION BOX HERO UNIT -->
+				<!-- VESSEL INFO DESKTOP CONTENT PANE -->
+				<div id="vessel_info" style="display:none">
+					<br />
+					<div class="row">
+						<div class="control-group span4"><div class="controls">
+						<div class="input-prepend">
+							<span class="add-on">Lloyds #</span><input class="input-small" type="text" id="lly-num"/ onKeyUp="generateReport();">
+						</div></div></div>
+						<div class="control-group span4"><div class="controls">
+						<div class="input-prepend">
+							<span class="add-on">Vessel Name</span><input class="input-small" type="text" id="vess-name" onKeyUp="generateReport();"/>
+						</div></div></div>
+						<div class="control-group span4"><div class="controls">
+						<div class="input-prepend">
+							<span class="add-on">Callsign</span><input class="input-small" type="text" id="callsign" onKeyUp="generateReport();"/>
+						</div></div></div>
+					</div>
+					
+					<div class="row-fluid">
+						<div class="span4"><LABEL for="rememberme" onClick="generateReport();"><input type="checkbox" id="rememberme" value="Y" onChange="rememberMeD();"/> Remember this vessel</LABEL></div>
+						<div class="span8">
+							Click 'remember this vessel' to save vessel<br />
+							information to your device and avoid reentry.<br /><br />
+						</div>
+					</div>
+				</div><!-- END VESSEL INFO DESKTOP CONTENT PANE -->
+				<!-- CURRENT POSITION DESKTOP CONTENT PANE -->
+				<div id="current_pos" style="display:none">
+					<br />
+					<div class="row-fluid" id="current-pos-lat-long" style="display:none">
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Latitude</span><select class="input-mini" id="current-pos-lat-deg" onChange="generateReport();">
+										<option>deg</option>
+									</select>
+									<select class="input-mini" id="current-pos-lat-min" onChange="generateReport();">
+										<option>min</option>
+									</select>
+									<select class="input-small" id="current-pos-lat-dir" onChange="generateReport();">
+										<option value="N">North</option>
+										<option value="S">South</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Longitude</span><select class="input-mini" id="current-pos-lon-deg" onChange="generateReport();">
+										<option>deg</option>
+									</select>
+									<select class="input-mini" id="current-pos-lon-min" onChange="generateReport();">
+										<option>min</option>
+									</select>
+									<select class="input-small" id="current-pos-lon-dir" onChange="generateReport();">
+										<option value="E">East</option>
+										<option value="W">West</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row-fluid" id="current-pos-crs-spd" style="display:block">
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Course</span><input type="text" class="input-mini" id="current-pos-crs" onKeyUp="enforceCourse('current-pos-', ''); generateReport();"/>
+								</div>
+							</div>
+						</div>
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Speed</span><input type="text" class="input-mini" id="current-pos-spd" onKeyUp="enforceSpeed('current-pos-', ''); generateReport();"/>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row-fluid">
+						<div class="span12">
+							<div class="btn-toolbar" id="dbar-current-bar">
+								<div class="btn-group">
+									<button class="btn btn-inverse" id="dbar-current-y" onClick="activateDate('dbar-current-', 'y'); setField('current-','y');">Year</button>
+									<button class="btn btn-inverse" id="dbar-current-mo" onClick="activateDate('dbar-current-', 'mo'); setField('current-','mo');">Month</button>
+									<button class="btn btn-inverse" id="dbar-current-d" onClick="activateDate('dbar-current-', 'd'); setField('current-','d');">Day</button>
+									<button class="btn btn-inverse" id="dbar-current-h" onClick="activateDate('dbar-current-', 'h'); setField('current-','h');">Hour</button>
+									<button class="btn btn-inverse" id="dbar-current-m" onClick="activateDate('dbar-current-', 'm'); setField('current-','m');">Minute</button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" onClick="incFieldD('current-'); generateReport();">
+										<i class="icon-plus icon-white"></i></button>
+									<button class="btn btn-success button-taller-ie" onClick="decFieldD('current-'); generateReport();">
+										<i class="icon-minus icon-white"></i></button>
+								</div>
+							</div>
+							<div style="display:none">
+								<h2><span id="current-y">2012</span>
+								<span>-</span>
+								<span id="current-mo">DEC</span>
+								<span>-</span>
+								<span id="current-d">12</span>
+								<span></span>
+								<span id="current-t">12:12Z</span></h2>
+							</div>
+							<input type="text" id="current-date" style="width:30%; text-align:center" readonly value="2012-DEC-12 12:12Z"/>
+						</div>
+					</div>
+				</div><!-- END CURRENT POSITION DESKTOP CONTENT PANE -->
+				<!-- DEPARTURE PORT DESKTOP CONTENT PANE -->
+				<div id="dept_port" style="display:none">
+					<br />
+					<div class="row-fluid">
+						<div class="control-group">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Departure Port Name</span><input type="text" id="dept-port" onKeyUp="searchPort(this.value, 'dept-port'); generateReport();"/>
+									<div id="recommended-dept-port" class="recommended-port"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row">
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Latitude</span><select class="input-mini" id="dept-port-lat-deg" onChange="generateReport();">
+										<option>deg</option>
+									</select>
+									<select class="input-mini" id="dept-port-lat-min" onChange="generateReport();">
+										<option>min</option>
+									</select>
+									<select class="input-small" id="dept-port-lat-dir" onChange="generateReport();">
+										<option value="N">North</option>
+										<option value="S">South</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Longitude</span><select class="input-mini" id="dept-port-lon-deg" onChange="generateReport();">
+										<option>deg</option>
+									</select>
+									<select class="input-mini" id="dept-port-lon-min" onChange="generateReport();">
+										<option>min</option>
+									</select>
+									<select class="input-small" id="dept-port-lon-dir" onChange="generateReport();">
+										<option value="E">East</option>
+										<option value="W">West</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div><!-- END DEPARTURE PORT DESKTOP CONTENT PANE -->
+				<!-- DESTINATION PORT DESKTOP CONTENT PANE -->
+				<div id="dest_port" style="display:none">
+					<br />
+					<div class="row-fluid">
+						<div class="control-group">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Destination Port Name</span><input type="text" id="dest-port" onKeyUp="searchPort(this.value, 'dest-port'); generateReport();"/>
+									<div id="recommended-dest-port" class="recommended-port"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row">
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Latitude</span><select class="input-mini" id="dest-port-lat-deg" onChange="generateReport();">
+										<option>deg</option>
+									</select>
+									<select class="input-mini" id="dest-port-lat-min" onChange="generateReport();">
+										<option>min</option>
+									</select>
+									<select class="input-small" id="dest-port-lat-dir" onChange="generateReport();">
+										<option value="N">North</option>
+										<option value="S">South</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Longitude</span><select class="input-mini" id="dest-port-lon-deg" onChange="generateReport();">
+										<option>deg</option>
+									</select>
+									<select class="input-mini" id="dest-port-lon-min" onChange="generateReport();">
+										<option>min</option>
+									</select>
+									<select class="input-small" id="dest-port-lon-dir" onChange="generateReport();">
+										<option value="E">East</option>
+										<option value="W">West</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						
+					<div class="row-fluid">
+						<div class="span12">
+							<div class="btn-toolbar" id="dbar-dest-bar">
+								<div class="btn-group">
+									<button class="btn btn-inverse" id="dbar-dest-y" onClick="activateDate('dbar-dest-', 'y'); setField('dest-','y');">Year</button>
+									<button class="btn btn-inverse" id="dbar-dest-mo" onClick="activateDate('dbar-dest-', 'mo'); setField('dest-','mo');">Month</button>
+									<button class="btn btn-inverse" id="dbar-dest-d" onClick="activateDate('dbar-dest-', 'd'); setField('dest-','d');">Day</button>
+									<button class="btn btn-inverse" id="dbar-dest-h" onClick="activateDate('dbar-dest-', 'h'); setField('dest-','h');">Hour</button>
+									<button class="btn btn-inverse" id="dbar-dest-m" onClick="activateDate('dbar-dest-', 'm'); setField('dest-','m');">Minute</button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" onClick="incFieldD('dest-'); generateReport();">
+										<i class="icon-plus icon-white"></i></button>
+									<button class="btn btn-success button-taller-ie" onClick="decFieldD('dest-'); generateReport();">
+										<i class="icon-minus icon-white"></i></button>
+								</div>
+							</div>
+							<div style="display:none">
+								<h2><span id="dest-y">2012</span>
+								<span>-</span>
+								<span id="dest-mo">DEC</span>
+								<span>-</span>
+								<span id="dest-d">12</span>
+								<span></span>
+								<span id="dest-t">12:12Z</span></h2>
+							</div>
+							<input type="text" id="dest-date" style="width:30%; text-align:center" readonly value="2012-DEC-12 12:12Z"/>
+						</div>
+					</div>
+						
+					</div>
+				</div><!-- END DESTINATION PORT DESKTOP CONTENT PANE -->
+				<!-- VOYAGE PLAN DESKTOP CONTENT PANE -->
+				<div id="voyage_plan" style="display:none">
+					<br />
+					<div class="row" style="">
+						<div class="control-group span4">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Nav Method</span><select id="voyage-nav" class="input-small">
+										<option>COASTAL</option>
+										<option>GC</option>
+										<option>RL</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="control-group span3">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Leg Speed</span><input type="text" id="voyage-leg-spd" class="input-mini"/>
+								</div>
+							</div>
+						</div>
+						<div class="control-group span5">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Port Name</span><input type="text" id="voyage-port" class="input-medium" id="voyage-port"/>
+									
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row" style="">
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Latitude</span><select id="voyage-port-lat-deg" class="input-mini">
+										<option>deg</option>
+									</select>
+									<select id="voyage-port-lat-min" class="input-mini">
+										<option>min</option>
+									</select>
+									<select id="voyage-port-lat-dir" class="input-small">
+										<option value="N">North</option>
+										<option value="S">South</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Longitude</span><select id="voyage-port-lon-deg" class="input-mini">
+										<option>deg</option>
+									</select>
+									<select id="voyage-port-lon-min" class="input-mini">
+										<option>min</option>
+									</select>
+									<select id="voyage-port-lon-dir" class="input-small">
+										<option value="E">East</option>
+										<option value="W">West</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row-fluid" style="">
+						<div class="span6">
+							<div class="btn-toolbar" id="dbar-voyage-dummy-bar" style="display:block">
+								<div class="btn-group">
+									<button class="btn btn-inverse" id="dbar-voyage-dummy-y" onClick="activateDate('dbar-voyage-dummy-', 'y'); setField('voyage-dummy-','y');">Year</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dummy-mo" onClick="activateDate('dbar-voyage-dummy-', 'mo'); setField('voyage-dummy-','mo');">Month</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dummy-d" onClick="activateDate('dbar-voyage-dummy-', 'd'); setField('voyage-dummy-','d');">Day</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dummy-h" onClick="activateDate('dbar-voyage-dummy-', 'h'); setField('voyage-dummy-','h');">Hour</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dummy-m" onClick="activateDate('dbar-voyage-dummy-', 'm'); setField('voyage-dummy-','m');">Minute</button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie"><i class="icon-plus icon-white"></i></button>
+									<button class="btn btn-success button-taller-ie"><i class="icon-minus icon-white"></i></button>
+								</div>
+							</div>
+							<div class="btn-toolbar" id="dbar-voyage-dept-bar" style="display:none">
+								<div class="btn-group">
+									<button class="btn btn-inverse" id="dbar-voyage-dept-y" onClick="activateDate('dbar-voyage-dept-', 'y'); setField('voyage-dept-','y');">Year</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dept-mo" onClick="activateDate('dbar-voyage-dept-', 'mo'); setField('voyage-dept-','mo');">Month</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dept-d" onClick="activateDate('dbar-voyage-dept-', 'd'); setField('voyage-dept-','d');">Day</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dept-h" onClick="activateDate('dbar-voyage-dept-', 'h'); setField('voyage-dept-','h');">Hour</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dept-m" onClick="activateDate('dbar-voyage-dept-', 'm'); setField('voyage-dept-','m');">Minute</button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" onClick="incFieldD('voyage-dept-'); generateReport();">
+										<i class="icon-plus icon-white"></i></button>
+									<button class="btn btn-success button-taller-ie" onClick="decFieldD('voyage-dept-'); generateReport();">
+										<i class="icon-minus icon-white"></i></button>
+								</div>
+							</div>
+							<div style="display:none">
+								<h2><span id="voyage-dept-y">2012</span>
+								<span>-</span>
+								<span id="voyage-dept-mo">DEC</span>
+								<span>-</span>
+								<span id="voyage-dept-d">12</span>
+								<span></span>
+								<span id="voyage-dept-t">12:12Z</span></h2>
+							</div>
+							<div class="btn-toolbar" id="dbar-voyage-dest-bar" style="display:none">
+								<div class="btn-group">
+									<button class="btn btn-inverse" id="dbar-voyage-dest-y" onClick="activateDate('dbar-voyage-dest-', 'y'); setField('voyage-dest-','y');">Year</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dest-mo" onClick="activateDate('dbar-voyage-dest-', 'mo'); setField('voyage-dest-','mo');">Month</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dest-d" onClick="activateDate('dbar-voyage-dest-', 'd'); setField('voyage-dest-','d');">Day</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dest-h" onClick="activateDate('dbar-voyage-dest-', 'h'); setField('voyage-dest-','h');">Hour</button>
+									<button class="btn btn-inverse" id="dbar-voyage-dest-m" onClick="activateDate('dbar-voyage-dest-', 'm'); setField('voyage-dest-','m');">Minute</button>
+								</div>
+								<div class="btn-group">
+									<button class="btn btn-success button-taller-ie" onClick="incFieldD('voyage-dest-'); generateReport();">
+										<i class="icon-plus icon-white"></i></button>
+									<button class="btn btn-success button-taller-ie" onClick="decFieldD('voyage-dest-'); generateReport();">
+										<i class="icon-minus icon-white"></i></button>
+								</div>
+							</div>
+							<div style="display:none">
+								<h2><span id="voyage-dest-y">2012</span>
+								<span>-</span>
+								<span id="voyage-dest-mo">DEC</span>
+								<span>-</span>
+								<span id="voyage-dest-d">12</span>
+								<span></span>
+								<span id="voyage-dest-t">12:12Z</span></h2>
+							</div>
+							<LABEL for="v-dp-t"  onClick="showVoyageDestDbar();"><input type="radio" name="voyage-date-type" value="dest" id="v-dp-t">Est. Arrival Time: 
+							<input type="text" id="voyage-dest-date" style="width:50%; text-align:center" readonly value="2012-DEC-12 12:12Z"/></LABEL>						
+							<LABEL for="v-ds-t" onClick="showVoyageDeptDbar(); setDepartureDirtyTrue();"><input type="radio" name="voyage-date-type" value="dept" id="v-ds-t">Departure Time:
+							<input type="text" id="voyage-dept-date" style="width:50%; text-align:center" readonly value="2012-DEC-12 12:12Z"/></LABEL>
+						</div>
+						<div class="span6">
+							L Lines Count: <span id="l-lines-counter">0</span><br/>
+							<button class="btn btn-success" onClick="addLLine();">Add Full Line</button>
+							<button class="btn btn-success" onClick="addLastLLine();">Add Final Line</button>
+							<button class="btn btn-danger" onClick="removeLLine();">Remove Previous</button>
+							<br/>
+							<textarea id="voyage-preview" readonly rows="3" style="width:95%"></textarea>
+						</div>
+					</div>
+				</div><!-- END VOYAGE PLAN DESKTOP CONTENT PANE -->
+				<!-- OPTIONAL INFO DESKTOP CONTENT PANE -->
+				<div id="optional_info" style="display:none">
+					<br />
+					<div class="row-fluid">
+						<div class="control-group span8">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Remarks</span><input class="span8" type="text" id="remarks" onKeyUp="generateReport();"/>
+								</div>
+							</div>
+						</div>
+
+						<div class="control-group span4">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Relay</span><select class="input-small" id="relay" onChange="generateReport();">
+										<option value="">NONE</option>
+										<option value="JASREP">JASREP</option>
+										<option value="CHILREP">CHILREP</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="row-fluid" id="optional-sat" style="display:block">
+						<div class="control-group span6">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Sat #</span><input type="text" id="sat-num" onKeyUp="generateReport();"/>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<div class="row-fluid" id="optional-medical" style="display:block">
+						<div class="control-group span4">
+							<div class="controls">
+								<div class="input-prepend">
+									<span class="add-on">Medical</span><select class="input-medium" id="medical" onChange="generateReport();">
+										<option value="">NONE</option>
+										<option value="DOCTOR">DOCTOR</option>
+										<option value="NURSE">NURSE</option>
+										<option value="PARAMEDIC">PARAMEDIC</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+				</div><!-- END OPTIONAL INFO DESKTOP CONTENT PANE -->
+			</div><!-- END DESKTOP CONTENT WINDOW -->
+		</div>
+		
+		<!--==============OUTPUT SECTION - heading, textarea, buttons=============-->
+		<div class="row-fluid">
+			<div class="span12 btn-inverse"><h3>Generated Report</h3><br/></div>
+		</div>
+		
+		<br />
+		
+		<div class="row hidden-phone">
+			The "Filled Required" button below turns to a green "Send Report" when you 
+			have filled the required lines.<br/>
+			Click the button to have your mail client create an email with
+			the report for you to send,<br/> or click "Select Report Text" to highlight the text
+			for you to manually copy and paste into an email.
+		</div>
+		
+		<br/>
+		
+		<div class="row">
+			<textarea class="span8 offset2" cols="65" rows="13" readonly id="message" value=""></textarea>
+		</div>
+		
+		<div class="row hidden-phone" id="fill_btns" style="display:block" >
+			<input type="button" class="btn btn-inverse span4 offset2" value="Fill Required Lines to Send" onClick="alert('Please ensure all required fields are filled and correct to send.');"/>
+			<input type="button" class="btn span4" value="Select Report Text" onClick="selectReport();"/>
+		</div>
+		
+		<div class="row hidden-phone" id="send_btns" style="display:none">
+			<input type="button" id="send-btn" class="btn btn-success span4 offset2" value="Send Report"/>
+			<input type="button" class="btn span4" value="Select Report Text" onClick="selectReport();"/>
+		</div>
+		
+		<div class="row visible-phone app-section-btn" style="padding-bottom:5px">
+			<div class="span12 btn app-btn btn-inverse" id="m_fill_btn" style="display:block" onClick="alert('Please ensure all required fields are filled and correct to send.');">
+				<h2>Fill Required Fields</h2>
+			</div>
+			<div class="span12 btn app-btn btn-success" id="m_send_btn" style="display:none">
+				<h2>Send Report</h2>
+			</div>
+		</div>
+		
+		<div class="hidden-phone">
+			<br />
+		</div>
+		
+		<!--==============END OUTPUT SECTION=======================================-->
+	
+    </div><!-- /container -->
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!--<script src="../assets/js/jquery.js"></script>
+    <script src="../assets/js/bootstrap-transition.js"></script>
+    <script src="../assets/js/bootstrap-alert.js"></script>
+    <script src="../assets/js/bootstrap-modal.js"></script>
+    <script src="../assets/js/bootstrap-dropdown.js"></script>
+    <script src="../assets/js/bootstrap-scrollspy.js"></script>
+    <script src="../assets/js/bootstrap-tab.js"></script>
+    <script src="../assets/js/bootstrap-tooltip.js"></script>
+    <script src="../assets/js/bootstrap-popover.js"></script>
+    <script src="../assets/js/bootstrap-button.js"></script>
+    <script src="../assets/js/bootstrap-collapse.js"></script>
+    <script src="../assets/js/bootstrap-carousel.js"></script>
+    <script src="../assets/js/bootstrap-typeahead.js"></script>-->
+
+  </body>
+</html>
